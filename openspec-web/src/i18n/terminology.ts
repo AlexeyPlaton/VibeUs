@@ -1,4 +1,7 @@
 export const terminologyEn = {
+  widget: {
+    powered_by: 'Powered by',
+  },
   v7: {
     create: {
       plan: {
@@ -39,6 +42,41 @@ export const terminologyEn = {
         runtime_ingest_key: 'Runtime Ingest Key',
         api_token: 'API Token',
       },
+    },
+    onboarding: {
+      tabs: {
+        runtime: 'Runtime Bridge',
+      },
+    },
+    runtime: {
+      item_status: {
+        open: 'Open',
+        resolved: 'Resolved',
+        ignored: 'Ignored',
+      },
+      detail: {
+        auto_task: 'Auto-created task',
+        crash_prefix: '[CRASH]',
+        request_id: 'Request ID',
+        current_release: 'current',
+      },
+    },
+    ticket: {
+      priority: {
+        critical: '⚡ Critical',
+      },
+      dod: {
+        title: 'Definition of Done (DoD)',
+        verified: 'VERIFIED',
+        verifying: 'VERIFYING…',
+        human_verify: 'HUMAN VERIFY',
+        manual_verify_failed: 'Manual verification failed',
+      },
+      fallback: {
+        browser: 'Browser',
+        os: 'OS',
+      },
+      qa_author: 'QA / Lead',
     },
   },
 };
@@ -97,6 +135,7 @@ export const terminologyRu = {
     plan_team_desc: 'Для студий и команд с несколькими клиентскими проектами',
   },
   widget: {
+    powered_by: 'Работает на',
     studio_desc: 'Для команды и разработчиков. Доступны спецификация, архитектура, доска задач и связь со средой разработки.',
     public_desc: 'Для посетителей сайта. Внутренняя спецификация и рабочая доска скрыты; доступна только форма обратной связи.',
     submit_bug: 'Сообщить о проблеме',
@@ -152,6 +191,41 @@ export const terminologyRu = {
         board: 'Доска задач',
         board_title: 'Открыть доску и задачи проекта',
       },
+    },
+    onboarding: {
+      tabs: {
+        runtime: 'Сбои сервера',
+      },
+    },
+    runtime: {
+      item_status: {
+        open: 'Открыт',
+        resolved: 'Решён',
+        ignored: 'Игнорируется',
+      },
+      detail: {
+        auto_task: 'Создано автоматически',
+        crash_prefix: '[СБОЙ]',
+        request_id: 'Номер запроса',
+        current_release: 'текущий',
+      },
+    },
+    ticket: {
+      priority: {
+        critical: '⚡ Критический',
+      },
+      dod: {
+        title: 'Критерии готовности',
+        verified: 'ПРОВЕРЕНО',
+        verifying: 'ПРОВЕРЯЕМ…',
+        human_verify: 'ПОДТВЕРДИТЬ ВРУЧНУЮ',
+        manual_verify_failed: 'Не удалось подтвердить критерий вручную',
+      },
+      fallback: {
+        browser: 'Браузер',
+        os: 'ОС',
+      },
+      qa_author: 'Проверяющий',
     },
     project_board: {
       subtitle: 'Доска задач, спецификация и критерии готовности',
