@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 async function registerAndCreateFreeProject(page: Page) {
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const slug = `e2e-${suffix}`;
   await page.goto('/create');
 
   await page.getByRole('button', { name: /register|sign up|регистра/i }).click();
@@ -13,7 +14,7 @@ async function registerAndCreateFreeProject(page: Page) {
   await expect(page.locator('input[placeholder="frontend-redesign"]')).toBeVisible();
   const requiredInputs = page.locator('form input[required]');
   await requiredInputs.first().fill(`E2E ${suffix}`);
-  await page.locator('input[placeholder="frontend-redesign"]').fill(`e2e-${suffix}`);
+  await page.locator('input[placeholder="frontend-redesign"]').fill(slug);
   await page.locator('form button[type="submit"]').click();
 
   await expect(page.getByText('API Token', { exact: true })).toBeVisible();
@@ -25,7 +26,7 @@ async function registerAndCreateFreeProject(page: Page) {
 
   const workspaceId = await page.evaluate(() => localStorage.getItem('vibeus_workspace_id') || '');
   expect(workspaceId).not.toBe('');
-  return { publicKey, workspaceId };
+  return { publicKey, workspaceId, slug };
 }
 
 
@@ -56,19 +57,19 @@ test('international checkout requires country and blocks current EEA/UK scope', 
 
 test('standalone public widget mounts in Shadow DOM and exposes compact feedback form', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile-chromium', 'Widget journey is intentionally exercised on mobile viewport');
-  const { publicKey } = await registerAndCreateFreeProject(page);
+  const { publicKey, slug } = await registerAndCreateFreeProject(page);
 
   await page.goto('/');
-  await page.evaluate(({ publicKey }) => {
+  await page.evaluate(({ publicKey, slug }) => {
     document.querySelectorAll('vibus-widget, vibeus-widget').forEach((node) => node.remove());
     const script = document.createElement('script');
     script.src = 'http://localhost:8000/static/vibus-widget.umd.cjs';
-    script.dataset.project = Array.from(document.querySelectorAll('input')).find((node) => (node as HTMLInputElement).value.startsWith('e2e-'))?.getAttribute('value') || '';
+    script.dataset.project = slug;
     script.dataset.publicKey = publicKey;
     script.dataset.server = 'http://localhost:8000';
     script.dataset.mode = 'public_feedback';
     document.body.appendChild(script);
-  }, { publicKey });
+  }, { publicKey, slug });
 
   const widget = page.locator('vibus-widget');
   await expect(widget).toBeAttached();
