@@ -40,6 +40,21 @@ async def async_client():
     async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as ac:
         yield ac
 
+
+def legal_registration_payload(email: str) -> dict:
+    return {
+        'email': email,
+        'password': 'Correct-Horse-42!Battery',
+        'legal_locale': 'en',
+        'accept_terms': True,
+        'acknowledge_privacy': True,
+        'consent_personal_data': False,
+        'terms_version': 'test-v1',
+        'privacy_version': 'test-v1',
+        'personal_data_consent_version': None,
+    }
+
+
 @pytest.mark.asyncio
 async def test_authorization_matrix(async_client: AsyncClient):
     # 1. Anonymous access
@@ -47,7 +62,8 @@ async def test_authorization_matrix(async_client: AsyncClient):
     assert ws_res.status_code == 401
 
     # 2. Register User 1
-    await async_client.post('/api/auth/register', json={'email': 'u1@test.com', 'password': 'Correct-Horse-42!Battery', 'accept_terms': True, 'terms_version': 'test-v1', 'privacy_version': 'test-v1'})
+    reg1 = await async_client.post('/api/auth/register', json=legal_registration_payload('u1@test.com'))
+    assert reg1.status_code == 200, reg1.text
     login1 = await async_client.post('/api/auth/login', json={'email': 'u1@test.com', 'password': 'Correct-Horse-42!Battery'})
     t1 = login1.json()['access_token']
     h1 = {'Authorization': f'Bearer {t1}'}
@@ -62,7 +78,8 @@ async def test_authorization_matrix(async_client: AsyncClient):
     assert get_res.status_code == 200
 
     # 4. Register User 2
-    await async_client.post('/api/auth/register', json={'email': 'u2@test.com', 'password': 'Correct-Horse-42!Battery', 'accept_terms': True, 'terms_version': 'test-v1', 'privacy_version': 'test-v1'})
+    reg2 = await async_client.post('/api/auth/register', json=legal_registration_payload('u2@test.com'))
+    assert reg2.status_code == 200, reg2.text
     login2 = await async_client.post('/api/auth/login', json={'email': 'u2@test.com', 'password': 'Correct-Horse-42!Battery'})
     t2 = login2.json()['access_token']
     h2 = {'Authorization': f'Bearer {t2}'}
