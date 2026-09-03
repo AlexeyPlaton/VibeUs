@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
+from urllib.parse import urlencode
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +21,7 @@ import models
 import schemas
 from database import get_db
 from release_invariants import human_review_transition, install_runtime_invariants
+from settings import get_settings
 
 
 install_runtime_invariants()
@@ -38,6 +40,42 @@ def _drop_api_route(path: str, method: str) -> None:
             and method in (getattr(route, "methods", None) or set())
         )
     ]
+
+
+# Existing React releases call this Stripe-shaped endpoint for the international
+# market. Keep the response contract, but route CloudPayments deployments through
+# a first-party country/business-scope step before any provider page is opened.
+_drop_api_route("/api/billing/create-checkout-session", "POST")
+
+
+@app.post('/api/billing/create-checkout-session')
+async def create_checkout_session_compat(
+    request: Request,
+    data: schemas.CreateCheckoutRequest,
+    user: models.User = Depends(auth.get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    cfg = get_settings()
+    workspace = await auth.require_workspace_capability(data.workspace_id, "workspace:billing", user, db)
+    success_url = legacy._validated_billing_return_url(
+        data.success_url, "/billing/success?session_id={CHECKOUT_SESSION_ID}"
+    )
+    cancel_url = legacy._validated_billing_return_url(data.cancel_url, "/billing/cancel")
+
+    if cfg.global_billing_provider != "cloudpayments":
+        return await legacy.create_checkout_session(request, data, user, db)
+
+    query = urlencode({
+        "workspace": workspace.id,
+        "tier": str(getattr(data.tier, "value", data.tier) or "solo"),
+        "success": success_url,
+        "cancel": cancel_url,
+    })
+    return {
+        "provider": "cloudpayments",
+        "checkout_url": f"{str(cfg.public_base_url).rstrip('/')}/billing/international?{query}",
+        "requires_billing_details": True,
+    }
 
 
 # Replace the legacy review route so only this authenticated human path is able
