@@ -46,6 +46,8 @@ def global_billing_enabled() -> bool:
     settings = get_settings()
     if not settings.enable_global_pricing:
         return False
+    if settings.enable_mock_billing and settings.environment in {"development", "test", "quality_gate"}:
+        return True
     return {
         "cloudpayments": bool(settings.enable_cloudpayments),
         "stripe": bool(settings.enable_stripe),
@@ -59,7 +61,7 @@ def public_catalog() -> dict[str, Any]:
         "market": "ru",
         "currency": "RUB",
         "period_days": settings.billing_period_days,
-        "billing_enabled": bool(settings.enable_yookassa),
+        "billing_enabled": bool(settings.enable_yookassa or (settings.enable_mock_billing and settings.environment in {"development", "test", "quality_gate"})),
         "plans": {
             tier: {
                 "amount": _money(amount("ru", tier)),
