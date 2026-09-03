@@ -5,6 +5,7 @@ import en from './locales/en.json';
 import ru from './locales/ru.json';
 import { v8En, v8Ru } from './v8';
 import { editorialEn, editorialRu } from './editorial';
+import { polishRussianCopy } from './russianCopy';
 
 export const SUPPORTED_UI_LOCALES = ['en', 'ru'] as const;
 export type SupportedUiLocale = (typeof SUPPORTED_UI_LOCALES)[number];
@@ -42,14 +43,16 @@ const enTranslation = mergeDeep(
   editorialEn,
 );
 
-const ruTranslation = mergeDeep(
-  {
-    ...ru,
-    public_feedback: v8Ru.public_feedback,
-    feedback: { ...((ru as any).feedback || {}), ...v8Ru.feedback },
-  },
-  editorialRu,
-);
+const ruTranslation = polishRussianCopy(
+  mergeDeep(
+    {
+      ...ru,
+      public_feedback: v8Ru.public_feedback,
+      feedback: { ...((ru as any).feedback || {}), ...v8Ru.feedback },
+    },
+    editorialRu,
+  ) as any,
+) as typeof ru;
 
 const resources = {
   en: { translation: enTranslation },
