@@ -26,7 +26,7 @@ def _payload(locale: str = "en") -> dict:
 def test_registration_requires_terms_and_privacy_separately():
     payload = _payload("en")
     payload["acknowledge_privacy"] = False
-    with pytest.raises(ValidationError, match="Privacy Policy acknowledgement is required"):
+    with pytest.raises(ValidationError, match="Privacy Policy must be acknowledged"):
         schemas.UserCreate(**payload)
 
     payload = _payload("en")
