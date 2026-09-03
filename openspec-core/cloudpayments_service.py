@@ -28,6 +28,27 @@ def _signature(payload: bytes, secret: str) -> str:
     return base64.b64encode(digest).decode("ascii")
 
 
+def _header_value(headers, name: str) -> str:
+    """Read an HTTP header from Starlette Headers or a plain mapping.
+
+    ASGI header collections are case-insensitive, but unit tests and provider
+    adapters can pass ordinary dicts. Treat header names according to HTTP
+    semantics instead of relying on the container implementation.
+    """
+    if headers is None:
+        return ""
+    if hasattr(headers, "get"):
+        value = headers.get(name)
+        if value:
+            return str(value).strip()
+    items = headers.items() if hasattr(headers, "items") else ()
+    lowered = name.lower()
+    for key, value in items:
+        if str(key).lower() == lowered:
+            return str(value or "").strip()
+    return ""
+
+
 def verify_notification_hmac(raw_body: bytes, headers) -> bool:
     """Verify CloudPayments POST notification integrity.
 
@@ -38,8 +59,8 @@ def verify_notification_hmac(raw_body: bytes, headers) -> bool:
     secret = get_settings().cloudpayments_api_secret.get_secret_value()
     if not secret:
         return False
-    encoded_header = (headers.get("content-hmac") or "").strip()
-    decoded_header = (headers.get("x-content-hmac") or "").strip()
+    encoded_header = _header_value(headers, "content-hmac")
+    decoded_header = _header_value(headers, "x-content-hmac")
     if encoded_header and hmac.compare_digest(_signature(raw_body, secret), encoded_header):
         return True
     if decoded_header:
