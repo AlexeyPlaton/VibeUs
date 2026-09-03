@@ -41,6 +41,24 @@ test('standalone widget supports auto light-dark theming without hard-coded dark
   assert.doesNotMatch(widget, /vibus-widget-root dark['"]/);
 });
 
+test('enterprise cards use local assignee initials and no remote avatar service', () => {
+  const card = read('src/components/widget/ui/KanbanCard.tsx');
+  assert.match(card, /getInitials/);
+  assert.match(card, /assigneeInitials/);
+  assert.doesNotMatch(card, /dicebear\.com/i);
+  assert.doesNotMatch(card, /<img\b/);
+});
+
+test('quick task creation is available in every active work column', () => {
+  const column = read('src/components/widget/ui/KanbanColumn.tsx');
+  assert.match(column, /canCreateInColumn\s*=\s*canWrite\s*&&\s*!isDoneCol/);
+  assert.match(column, /handleAddTicket\?\.\(e, inlineTicketTitle\.trim\(\), inlinePriority, col\.id\)/);
+  assert.match(column, /bug\.priority_low/);
+  assert.match(column, /bug\.priority_medium/);
+  assert.match(column, /bug\.priority_high/);
+  assert.doesNotMatch(column, />🟢 Low</);
+});
+
 test('enterprise board stylesheet is loaded in app and widget builds', () => {
   const main = read('src/main.tsx');
   const widget = read('src/widget.tsx');
