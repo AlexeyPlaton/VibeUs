@@ -36,6 +36,35 @@ test('register -> free project -> one-time credentials', async ({ page }, testIn
 });
 
 
+test('enterprise task board switches light/dark theme and remembers the choice', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Enterprise board journey runs once on desktop');
+  const { slug } = await registerAndCreateFreeProject(page);
+
+  await page.goto('/app');
+  const project = page.locator('article').filter({ hasText: slug });
+  await expect(project).toBeVisible();
+  await project.getByRole('button', { name: /board|доска/i }).click();
+
+  const shell = page.locator('.enterprise-board-host');
+  await expect(page.locator('.enterprise-board-modal')).toBeVisible();
+  await expect(shell).toHaveClass(/vibe-theme-(?:light|dark)/);
+  await expect(page.locator('.enterprise-board-stage .spatial-kanban')).toBeVisible();
+
+  const before = await shell.getAttribute('class');
+  const beforeTheme = before?.includes('vibe-theme-light') ? 'light' : 'dark';
+  const afterTheme = beforeTheme === 'light' ? 'dark' : 'light';
+
+  await shell.locator('header button').first().click();
+  await expect(shell).toHaveClass(new RegExp(`vibe-theme-${afterTheme}`));
+  await expect.poll(async () => page.evaluate(() => localStorage.getItem('vibus_board_theme'))).toBe(afterTheme);
+
+  await shell.locator('header button').last().click();
+  await expect(page.locator('.enterprise-board-modal')).toHaveCount(0);
+  await project.getByRole('button', { name: /board|доска/i }).click();
+  await expect(page.locator('.enterprise-board-host')).toHaveClass(new RegExp(`vibe-theme-${afterTheme}`));
+});
+
+
 test('international checkout requires country and blocks current EEA/UK scope', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium', 'Billing decision flow runs once on desktop');
   const { workspaceId } = await registerAndCreateFreeProject(page);
@@ -76,6 +105,7 @@ test('standalone public widget mounts in Shadow DOM and exposes compact feedback
   await expect.poll(async () => widget.evaluate((el: any) => Boolean(el.shadowRoot?.querySelector('#vibeWidgetBtn')))).toBe(true);
   await widget.evaluate((el: any) => (el.shadowRoot?.querySelector('#vibeWidgetBtn') as HTMLElement | null)?.click());
   await expect.poll(async () => widget.evaluate((el: any) => el.shadowRoot?.textContent?.includes('Send feedback') || el.shadowRoot?.textContent?.includes('Отправить'))).toBe(true);
+  await expect.poll(async () => widget.evaluate((el: any) => el.shadowRoot?.querySelector('[data-vibus-root]')?.className || '')).toMatch(/vibe-theme-(?:light|dark)/);
 
   const box = await widget.evaluate((el: any) => {
     const panel = el.shadowRoot?.querySelector('.spatial-kanban') as HTMLElement | null;
