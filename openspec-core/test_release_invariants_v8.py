@@ -5,23 +5,40 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 import crud
 import models
 import schemas
-from release_invariants import human_review_transition, install_runtime_invariants
+from release_invariants import (
+    done_transition_requires_human_context,
+    human_review_transition,
+    install_runtime_invariants,
+)
 
 
 install_runtime_invariants()
 
 
 def test_done_status_requires_explicit_human_review_context():
-    ticket = models.SpecTicket(node_id="node", title="Guarded", status="review")
+    assert done_transition_requires_human_context("done") is True
+    assert done_transition_requires_human_context("review") is False
+    with human_review_transition():
+        assert done_transition_requires_human_context("done") is False
+
+
+@pytest.mark.asyncio
+async def test_crud_done_transition_is_rejected_for_machine_writer():
+    class Payload:
+        status = "done"
+
+    class EmptyResult:
+        def scalar_one_or_none(self):
+            return None
+
+    class FakeDb:
+        async def execute(self, *args, **kwargs):
+            return EmptyResult()
 
     with pytest.raises(HTTPException) as exc:
-        ticket.status = "done"
+        await crud.update_ticket(FakeDb(), "project", "ticket", Payload())
     assert exc.value.status_code == 403
     assert "human review" in str(exc.value.detail).lower()
-
-    with human_review_transition():
-        ticket.status = "done"
-    assert ticket.status == "done"
 
 
 @pytest.mark.asyncio
