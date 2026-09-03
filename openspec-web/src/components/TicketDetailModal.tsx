@@ -148,7 +148,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   const doneDoD = Object.values(checklists).filter(Boolean).length;
   const dodPercent = totalDoD > 0 ? Math.round((doneDoD / totalDoD) * 100) : 0;
 
-  // Grouped DoD Checklists by Technical Category
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const toggleGroupCollapse = (groupId: string) => {
     setCollapsedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -184,7 +183,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
     return Object.values(groups).filter(g => g.items.length > 0);
   }, [checklists, t18n]);
 
-  // Sync state when ticket changes
   useEffect(() => {
     if (ticket) {
       setTitle(ticket.title || '');
@@ -255,10 +253,10 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
         body: JSON.stringify({ key }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (data.detail?.code || 'Manual verification failed'));
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : (data.detail?.code || t18n('v7.ticket.dod.manual_verify_failed')));
       if (data.evidence) setManualEvidence(prev => ({ ...prev, [key]: data.evidence }));
     } catch (err: any) {
-      setManualVerifyError(err?.message || 'Manual verification failed');
+      setManualVerifyError(err?.message || t18n('v7.ticket.dod.manual_verify_failed'));
     } finally {
       setManualVerifyBusy(null);
     }
@@ -276,7 +274,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
     if (!ticket || !newCommentText.trim()) return;
     const newComment = {
       id: `c_${Date.now()}`,
-      author: 'QA / Lead',
+      author: t18n('v7.ticket.qa_author'),
       text: newCommentText.trim(),
       created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
@@ -321,8 +319,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999999] flex items-center justify-center p-3 sm:p-6 font-['Plus_Jakarta_Sans',sans-serif] animate-fadeIn"
     >
       <div className="bg-slate-900/95 backdrop-blur-2xl text-slate-100 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-700/60 animate-scaleIn">
-        
-        {/* MODAL HEADER */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/[0.08] bg-slate-900/80 shrink-0">
           <div className="flex items-center gap-3">
             <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
@@ -393,10 +389,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
           </div>
         </div>
 
-        {/* MODAL BODY */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 bg-transparent">
-          
-          {/* TITLE & SECTION BAR */}
           <div className="spatial-card space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
               <div className="flex items-center gap-2 flex-1">
@@ -417,7 +410,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 </select>
               </div>
 
-              {/* PRIORITY & ASSIGNEE */}
               <div className="flex items-center gap-2">
                 <select
                   value={priority}
@@ -436,7 +428,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   <option value="low" style={{ backgroundColor: '#0f172a', color: '#f8fafc' }} className="bg-slate-900 text-white">{t18n('modal.priority_low')}</option>
                   <option value="medium" style={{ backgroundColor: '#0f172a', color: '#f8fafc' }} className="bg-slate-900 text-white">{t18n('modal.priority_medium')}</option>
                   <option value="high" style={{ backgroundColor: '#0f172a', color: '#f8fafc' }} className="bg-slate-900 text-white">{t18n('modal.priority_high')}</option>
-                  <option value="critical" style={{ backgroundColor: '#0f172a', color: '#f8fafc' }} className="bg-slate-900 text-white">⚡ Critical</option>
+                  <option value="critical" style={{ backgroundColor: '#0f172a', color: '#f8fafc' }} className="bg-slate-900 text-white">{t18n('v7.ticket.priority.critical')}</option>
                 </select>
 
                 <div className="flex items-center gap-1.5 bg-slate-900/80 px-2.5 py-1 rounded-xl border border-slate-700/60 text-xs">
@@ -453,7 +445,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
               </div>
             </div>
 
-            {/* EDITABLE TITLE */}
             <input
               type="text"
               value={title}
@@ -464,7 +455,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             />
           </div>
 
-          {/* QA / REWORK ACTION BOX (WHEN IN REVIEW) */}
           {status === 'review' && (
             <div className="spatial-card border-indigo-500/30 bg-indigo-500/10 space-y-3 animate-fadeIn">
               <div className="flex items-center justify-between">
@@ -507,7 +497,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             </div>
           )}
 
-          {/* DESCRIPTION / SUMMARY */}
           <div className="spatial-card space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-400">{t18n('ticket_modal.description_label')}</span>
@@ -522,12 +511,11 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             />
           </div>
 
-            {/* DEFINITION OF DONE (DOD) CHECKLISTS */}
             <div className="spatial-card space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckSquare className="w-4 h-4 text-indigo-400" />
-                  <span className="text-xs font-bold text-slate-200">Definition of Done (DoD)</span>
+                  <span className="text-xs font-bold text-slate-200">{t18n('v7.ticket.dod.title')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-slate-400">
@@ -539,14 +527,12 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Grouped DoD Checklist Items */}
               <div className="space-y-3">
                 {Object.keys(checklists).length === 0 ? (
                   <div className="p-3 text-center border border-dashed border-white/[0.08] rounded-xl text-xs text-slate-500">
                     {t18n('ticket_modal.dod_empty')}
                   </div>
                 ) : groupedChecklists.length === 1 && groupedChecklists[0] && groupedChecklists[0].items.length <= 2 ? (
-                  // Simple flat list when very few items
                   <div className="space-y-1.5">
                     {groupedChecklists[0]?.items.map(({ key, isDone }) => (
                       <div 
@@ -569,7 +555,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {isCriterionVerified(key) ? (
-                            <span className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-300">VERIFIED</span>
+                            <span className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-300">{t18n('v7.ticket.dod.verified')}</span>
                           ) : (isDone && ticket?.criteria_contract?.[key]) ? (
                             <button
                               type="button"
@@ -577,7 +563,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                               onClick={(e) => { e.stopPropagation(); void handleManualVerify(key); }}
                               className="px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-200 hover:bg-amber-500/20 disabled:opacity-50"
                             >
-                              {manualVerifyBusy === key ? 'VERIFYING…' : 'HUMAN VERIFY'}
+                              {manualVerifyBusy === key ? t18n('v7.ticket.dod.verifying') : t18n('v7.ticket.dod.human_verify')}
                             </button>
                           ) : null}
                           <button
@@ -595,7 +581,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                     ))}
                   </div>
                 ) : (
-                  // Structured grouped cards by category
                   groupedChecklists.map((group) => {
                     const groupDone = group.items.filter(i => i.isDone).length;
                     const groupTotal = group.items.length;
@@ -606,7 +591,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                         key={group.id} 
                         className="bg-slate-950/80 rounded-2xl border border-white/[0.06] overflow-hidden transition-all shadow-xs"
                       >
-                        {/* Group Header */}
                         <div 
                           onClick={() => toggleGroupCollapse(group.id)}
                           className="flex items-center justify-between p-2.5 sm:px-3 bg-white/[0.02] hover:bg-white/[0.05] cursor-pointer transition-colors select-none"
@@ -627,7 +611,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                           </span>
                         </div>
 
-                        {/* Group Items */}
                         {!isCollapsed && (
                           <div className="p-2 space-y-1.5 border-t border-white/[0.04]">
                             {group.items.map(({ key, isDone }) => (
@@ -651,7 +634,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
                                   {isCriterionVerified(key) ? (
-                                    <span className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-300">VERIFIED</span>
+                                    <span className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-300">{t18n('v7.ticket.dod.verified')}</span>
                                   ) : (isDone && ticket?.criteria_contract?.[key]) ? (
                                     <button
                                       type="button"
@@ -659,7 +642,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                                       onClick={(e) => { e.stopPropagation(); void handleManualVerify(key); }}
                                       className="px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-200 hover:bg-amber-500/20 disabled:opacity-50"
                                     >
-                                      {manualVerifyBusy === key ? 'VERIFYING…' : 'HUMAN VERIFY'}
+                                      {manualVerifyBusy === key ? t18n('v7.ticket.dod.verifying') : t18n('v7.ticket.dod.human_verify')}
                                     </button>
                                   ) : null}
                                   <button
@@ -687,7 +670,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 <div className="text-[11px] text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">{manualVerifyError}</div>
               )}
 
-              {/* Add DoD Item Form with Ghost Auto-Suggestion */}
               <div className="space-y-2 pt-1">
                 <form onSubmit={handleAddChecklistItem} className="flex items-center gap-2">
                   <input
@@ -707,7 +689,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   </button>
                 </form>
 
-                {/* Quick Action Tools: Presets / Catalog & AI Generator */}
                 <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
                   <div className="flex items-center gap-1.5">
                     <button
@@ -732,7 +713,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
               </div>
             </div>
 
-            {/* DoD Manager Modal */}
             <DoDManager
               isOpen={isDoDManagerOpen}
               onClose={() => setIsDoDManagerOpen(false)}
@@ -744,7 +724,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
               t18n={t18n}
             />
 
-          {/* BUG CONTEXT (IF BUG REPORT) */}
           {ticket.bug_context && (ticket.bug_context.selector || ticket.bug_context.apiEndpoint || ticket.bug_context.os || ticket.bug_context.browser) && (
             <div className="spatial-card border-rose-500/20 bg-rose-500/10 space-y-2.5">
               <div className="flex items-center gap-2">
@@ -767,7 +746,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 {(ticket.bug_context.os || ticket.bug_context.browser) && (
                   <div className="p-2.5 bg-slate-900 rounded-xl border border-white/[0.08]">
                     <span className="text-slate-500 font-sans font-semibold block text-[10px]">{t18n('ticket_modal.device_os_browser')}</span>
-                    <span className="text-indigo-300 font-semibold">{ticket.bug_context.browser || 'Browser'} • {ticket.bug_context.os || 'OS'}</span>
+                    <span className="text-indigo-300 font-semibold">{ticket.bug_context.browser || t18n('v7.ticket.fallback.browser')} • {ticket.bug_context.os || t18n('v7.ticket.fallback.os')}</span>
                   </div>
                 )}
                 {(ticket.bug_context.viewport || ticket.bug_context.windowSize) && (
@@ -791,14 +770,12 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             </div>
           )}
 
-          {/* COMMENTS & DISCUSSIONS */}
           <div className="spatial-card space-y-3">
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-slate-400" />
               <span className="text-xs font-bold text-slate-200">{t18n('ticket_modal.comments_title')} ({ticket.comments?.length || 0})</span>
             </div>
 
-            {/* Comment Thread */}
             <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
               {(ticket.comments || []).length === 0 ? (
                 <div className="p-3 text-center text-xs text-slate-500 italic">
@@ -817,7 +794,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
               )}
             </div>
 
-            {/* Add Comment Input */}
             <form onSubmit={handleAddComment} className="flex items-center gap-2 pt-1">
               <input
                 type="text"
@@ -837,7 +813,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
 
         </div>
 
-        {/* MODAL FOOTER */}
         <div className="p-4 bg-slate-900/90 border-t border-white/[0.08] flex items-center justify-between">
           <button
             onClick={() => onDeleteTicket(ticket)}
