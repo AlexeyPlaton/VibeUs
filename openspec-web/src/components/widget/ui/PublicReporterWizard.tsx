@@ -23,7 +23,7 @@ type FeedbackType = 'bug' | 'idea' | 'question';
 export const PublicReporterWizard: React.FC<PublicReporterWizardProps> = ({ state }) => {
   const {
     t18n,
-    projectId,
+    boardData,
     handleSubmitFeedback,
     newFeedbackText,
     setNewFeedbackText,
@@ -41,14 +41,12 @@ export const PublicReporterWizard: React.FC<PublicReporterWizardProps> = ({ stat
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const projectScope = String(boardData?.project_id || 'default');
   const draftKey = useMemo(
-    () => `vibus_feedback_draft_text:${String(projectId || 'default')}`,
-    [projectId],
+    () => `vibus_feedback_draft_text:${projectScope}`,
+    [projectScope],
   );
-  const contactKey = useMemo(
-    () => `vibus_feedback_draft_contact:${String(projectId || 'default')}`,
-    [projectId],
-  );
+  const contactKey = 'vibus_feedback_draft_contact';
 
   const { isListening, isSupported, toggleListening } = useVoiceInput(currentLanguage || 'en');
 
@@ -61,18 +59,18 @@ export const PublicReporterWizard: React.FC<PublicReporterWizardProps> = ({ stat
     } catch {
       // Storage can be unavailable in privacy/sandboxed browsing contexts.
     }
-  }, [draftKey, contactKey, setNewFeedbackContact, setNewFeedbackText]);
+  }, [draftKey, setNewFeedbackContact, setNewFeedbackText]);
 
   useEffect(() => {
     try {
       if (newFeedbackText) localStorage.setItem(draftKey, newFeedbackText);
       else localStorage.removeItem(draftKey);
-      if (newFeedbackContact) sessionStorage.setItem(contactKey, newFeedbackContact);
-      else sessionStorage.removeItem(contactKey);
+      if (newFeedbackContact) sessionStorage.setItem('vibus_feedback_draft_contact', newFeedbackContact);
+      else sessionStorage.removeItem('vibus_feedback_draft_contact');
     } catch {
       // Draft persistence is a convenience only and must never block feedback.
     }
-  }, [draftKey, contactKey, newFeedbackContact, newFeedbackText]);
+  }, [draftKey, newFeedbackContact, newFeedbackText]);
 
   const chooseType = (type: FeedbackType) => {
     setFeedbackType(type);
@@ -101,7 +99,7 @@ export const PublicReporterWizard: React.FC<PublicReporterWizardProps> = ({ stat
       await handleSubmitFeedback(e, prefix + clean);
       try {
         localStorage.removeItem(draftKey);
-        sessionStorage.removeItem(contactKey);
+        sessionStorage.removeItem('vibus_feedback_draft_contact');
       } catch {}
       setNewFeedbackText('');
       setNewFeedbackContact('');
