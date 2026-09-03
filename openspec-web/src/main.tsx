@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import './widget-responsive.css';
 import App from './App';
 import './i18n/config';
 
