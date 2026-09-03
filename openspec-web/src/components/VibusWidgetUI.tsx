@@ -139,8 +139,6 @@ export const VibusWidgetUI = ({
 
   return (
     <div className="fixed bottom-6 right-6 z-[999999] flex flex-col items-end gap-3 font-['Plus_Jakarta_Sans',sans-serif] text-slate-100 antialiased selection:bg-indigo-600 selection:text-white">
-
-      {/* GLOBAL SELECTION QUICK ACTION */}
       {globalSelection && !isOpen && (
         <button
           onMouseDown={(e) => {
@@ -161,7 +159,6 @@ export const VibusWidgetUI = ({
         </button>
       )}
 
-      {/* DRAWER / MAIN KANBAN WINDOW */}
       <div 
         id="vibeKanban"
         onWheel={(e) => e.stopPropagation()}
@@ -170,8 +167,6 @@ export const VibusWidgetUI = ({
           (isOpen ? 'active' : '')
         }
       >
-
-        {/* PREMIUM GLASSMORPHISM HEADER */}
         <WidgetHeader
           isPublicMode={isPublicMode}
           connected={connected}
@@ -190,7 +185,6 @@ export const VibusWidgetUI = ({
           isReadOnly={state.isReadOnly}
         />
 
-        {/* MAIN BODY */}
         {isPublicMode ? (
           <PublicReporterWizard state={state} />
         ) : viewMode === 'feedback' ? (
@@ -201,7 +195,6 @@ export const VibusWidgetUI = ({
           <BoardView state={state} />
         )}
 
-        {/* WHITE-LABEL BRANDING FOOTER (Shown only for Free tier) */}
         {(!boardData?.subscription_tier || boardData.subscription_tier === 'free') && (
           <div className="shrink-0 border-t border-white/[0.06] bg-slate-950/60 px-4 py-2 flex items-center justify-center">
             <a 
@@ -211,15 +204,12 @@ export const VibusWidgetUI = ({
               className="flex items-center gap-1.5 text-[10px] text-slate-400 hover:text-white transition-colors no-underline font-medium"
             >
               <Zap className="w-3 h-3 text-indigo-400" />
-              Powered by <span className="font-bold text-white tracking-wide">VibeUs</span>
+              {t18n('widget.powered_by')} <span className="font-bold text-white tracking-wide">VibeUs</span>
             </a>
           </div>
         )}
       </div>
 
-      {/* TOP-LEVEL OVERLAYS & MODALS (Outside transformed spatial-kanban to avoid CSS containment issues) */}
-
-      {/* 1. UNIFIED SETTINGS MODAL (GLASSMORPHISM) */}
       <SettingsPanel
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={setIsSettingsOpen}
@@ -276,7 +266,6 @@ export const VibusWidgetUI = ({
         setIsProjectDeleteModalOpen={setIsProjectDeleteModalOpen}
       />
 
-      {/* 2. RICH TICKET DETAIL & EDIT MODAL */}
       {selectedTicketForEdit && (
         <TicketDetailModal
           isOpen={!!selectedTicketForEdit}
@@ -296,10 +285,8 @@ export const VibusWidgetUI = ({
         />
       )}
 
-      {/* 3. UNIVERSAL BUG REPORTER MODAL */}
       {isBugModalOpen && <BugReporterModal state={state} />}
 
-      {/* 3. PROJECT / BOARD DELETION CONFIRMATION DIALOG (DANGER ZONE PROTECTION) */}
       {isProjectDeleteModalOpen && (
         <div 
           onClick={(e) => {
@@ -370,7 +357,6 @@ export const VibusWidgetUI = ({
         </div>
       )}
 
-      {/* 4. DELETION CONFIRMATION DIALOG (TICKET DELETION PROTECTION) */}
       {deletingTicket && (
         <div 
           onClick={(e) => {
@@ -432,7 +418,6 @@ export const VibusWidgetUI = ({
         </div>
       )}
 
-      {/* 5. DISCUSSION THREAD / CONVERT TO TICKET MODAL */}
       {activeDiscussionThread && (
         <div 
           onClick={(e) => {
@@ -473,12 +458,10 @@ export const VibusWidgetUI = ({
               </button>
             </div>
 
-            {/* Quote box */}
             <div className="p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-xs text-amber-200 font-medium italic">
               💬 "{activeDiscussionThread.quote}"
             </div>
 
-            {/* Comments Thread */}
             <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
               {activeDiscussionThread.comments.map((c: any) => (
                 <div key={c.id} className="p-2.5 bg-slate-950 rounded-xl border border-white/[0.05] text-xs space-y-1">
@@ -491,7 +474,6 @@ export const VibusWidgetUI = ({
               ))}
             </div>
 
-            {/* Add comment input */}
             <form onSubmit={handleAddCommentToDiscussion} className="flex items-center gap-2">
               <input
                 type="text"
@@ -508,7 +490,6 @@ export const VibusWidgetUI = ({
               </button>
             </form>
 
-            {/* Linked created tickets list */}
             {activeDiscussionThread.created_ticket_ids && activeDiscussionThread.created_ticket_ids.length > 0 && (
               <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-[10px] text-emerald-300 flex items-center gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -516,7 +497,6 @@ export const VibusWidgetUI = ({
               </div>
             )}
 
-            {/* Convert To Ticket Button / Form */}
             <div className="border-t border-white/[0.08] pt-3 flex flex-col gap-2">
               {isConvertingToTicket ? (
                 <div className="p-3 bg-white/[0.04] rounded-2xl border border-white/[0.08] space-y-2 animate-fadeIn">
@@ -563,7 +543,6 @@ export const VibusWidgetUI = ({
         </div>
       )}
 
-      {/* VISUAL ELEMENT INSPECTOR (AUTO-ATTACHED LOGS - TOP LEVEL) */}
       <VisualInspectorOverlay
         isActive={state.isInspectorActive}
         onClose={() => {
@@ -573,7 +552,6 @@ export const VibusWidgetUI = ({
         onElementSelect={state.handleElementInspected}
       />
 
-      {/* FLOATING ACTION BUTTON */}
       <WidgetLauncher 
         isOpen={isOpen}
         isInspectorActive={state.isInspectorActive}
