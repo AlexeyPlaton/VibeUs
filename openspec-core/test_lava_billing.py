@@ -53,6 +53,7 @@ def test_production_rejects_enabled_lava_without_credentials():
             token_pepper="x" * 32,
             field_encryption_key="y" * 32,
             enable_demo_seed=False,
+            enable_mock_billing=False,
             enable_lava=True,
             global_billing_provider="lava",
         )
@@ -72,6 +73,7 @@ def test_production_accepts_complete_lava_configuration():
         token_pepper="x" * 32,
         field_encryption_key="y" * 32,
         enable_demo_seed=False,
+        enable_mock_billing=False,
         enable_lava=True,
         global_billing_provider="lava",
         lava_api_key="provider-api-key",
