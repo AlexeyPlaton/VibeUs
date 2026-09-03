@@ -31,11 +31,14 @@ class Settings(BaseSettings):
     enable_public_tunnels: bool = True
     enable_stripe: bool = False
     enable_yookassa: bool = False
-    # LAVA is an international payment-provider candidate for deployments whose
-    # operator is actually eligible for LAVA. Keep it disabled until merchant
-    # verification and written confirmation that the deployed SaaS use case is
-    # accepted by the provider.
+    # LAVA is the primary international candidate for the canonical RF-operated
+    # deployment. Keep it disabled until merchant verification and written SaaS
+    # eligibility confirmation are complete.
     enable_lava: bool = False
+    # Robokassa is an independent fallback candidate for foreign bank-card
+    # acceptance. It is not an automatic retry target after an uncertain LAVA
+    # request: provider selection must happen before invoice creation.
+    enable_robokassa: bool = False
     enable_mock_billing: bool = False
     enable_enhanced_diagnostics: bool = False
     enable_demo_seed: bool = True
@@ -45,7 +48,8 @@ class Settings(BaseSettings):
     billing_period_days: int = Field(default=30, ge=1, le=366)
     pricing_default_market: Literal["ru", "global"] = "ru"
     enable_global_pricing: bool = False
-    global_billing_provider: Literal["stripe", "lava"] = "stripe"
+    global_billing_provider: Literal["stripe", "lava", "robokassa"] = "stripe"
+    global_billing_fallback_provider: Literal["none", "lava", "robokassa"] = "none"
     price_rub_solo: Decimal = Field(default=Decimal("1490.00"), gt=0)
     price_rub_studio: Decimal = Field(default=Decimal("4990.00"), gt=0)
     price_usd_solo: Decimal = Field(default=Decimal("29.00"), gt=0)
@@ -65,6 +69,17 @@ class Settings(BaseSettings):
     lava_webhook_api_key: SecretStr = SecretStr("")
     lava_offer_id_solo: str = ""
     lava_offer_id_studio: str = ""
+
+    # Robokassa merchant form / ResultURL protocol. Password #1 signs checkout
+    # creation; Password #2 verifies server-to-server payment notifications.
+    # The hash algorithm must match the algorithm selected in the merchant's
+    # Robokassa technical settings.
+    robokassa_payment_url: AnyHttpUrl = "https://auth.robokassa.ru/Merchant/Index.aspx"
+    robokassa_merchant_login: str = ""
+    robokassa_password1: SecretStr = SecretStr("")
+    robokassa_password2: SecretStr = SecretStr("")
+    robokassa_hash_algorithm: Literal["md5", "sha256", "sha512"] = "sha256"
+    robokassa_is_test: bool = False
 
     # Configure these from your accountant/cash-register setup only if billing_tax_mode == "kkt_54fz".
     # In NPD (самозанятый) mode, ККТ is not used and electronic receipts are registered via "Мой налог".
@@ -112,17 +127,33 @@ class Settings(BaseSettings):
         ):
             errors.append("YooKassa credentials are required")
         if self.enable_lava:
-            if self.global_billing_provider != "lava":
-                errors.append("GLOBAL_BILLING_PROVIDER must be 'lava' when ENABLE_LAVA=true")
+            if self.global_billing_provider != "lava" and self.global_billing_fallback_provider != "lava":
+                errors.append("LAVA must be selected as primary or fallback when ENABLE_LAVA=true")
             if not self.lava_api_key.get_secret_value():
                 errors.append("LAVA_API_KEY is required when ENABLE_LAVA=true")
             if not self.lava_webhook_api_key.get_secret_value():
                 errors.append("LAVA_WEBHOOK_API_KEY is required when ENABLE_LAVA=true")
             if not self.lava_offer_id_solo.strip() or not self.lava_offer_id_studio.strip():
                 errors.append("LAVA offer IDs for Solo and Studio are required when ENABLE_LAVA=true")
+        if self.enable_robokassa:
+            if self.global_billing_provider != "robokassa" and self.global_billing_fallback_provider != "robokassa":
+                errors.append("Robokassa must be selected as primary or fallback when ENABLE_ROBOKASSA=true")
+            if not self.robokassa_merchant_login.strip():
+                errors.append("ROBOKASSA_MERCHANT_LOGIN is required when ENABLE_ROBOKASSA=true")
+            if not self.robokassa_password1.get_secret_value():
+                errors.append("ROBOKASSA_PASSWORD1 is required when ENABLE_ROBOKASSA=true")
+            if not self.robokassa_password2.get_secret_value():
+                errors.append("ROBOKASSA_PASSWORD2 is required when ENABLE_ROBOKASSA=true")
+            if self.robokassa_payment_url.scheme != "https":
+                errors.append("ROBOKASSA_PAYMENT_URL must use HTTPS")
+        if self.global_billing_fallback_provider != "none" and self.global_billing_fallback_provider == self.global_billing_provider:
+            errors.append("Global billing fallback provider must differ from the primary provider")
         if self.enable_global_pricing and self.global_billing_provider == "lava" and not self.enable_lava:
             # It is valid to expose global prices before checkout is enabled, but
             # production must never advertise a live LAVA checkout accidentally.
+            pass
+        if self.enable_global_pricing and self.global_billing_provider == "robokassa" and not self.enable_robokassa:
+            # Same separation of price visibility and provider activation.
             pass
         if self.enable_yookassa and self.billing_tax_mode == "kkt_54fz":
             if not self.yookassa_vat_code:
