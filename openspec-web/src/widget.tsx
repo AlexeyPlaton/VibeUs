@@ -4,6 +4,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n/config';
 import { VibusWidgetUI } from './components/VibusWidgetUI';
 import './index.css';
+import './widget-responsive.css';
 
 function consumeUrlCapability(): string {
   if (typeof window === 'undefined') return '';
