@@ -12,6 +12,9 @@ config = src / 'i18n' / 'config.ts'
 constants = src / 'components' / 'widget' / 'constants.ts'
 pricing = src / 'utils' / 'pricing.ts'
 index_html = root / 'openspec-web' / 'index.html'
+legal_page = src / 'pages' / 'legalpage.tsx'
+web_legal_en = src / 'legal' / 'docs' / 'en'
+canonical_legal_en = root / 'docs' / 'legal' / 'en'
 errors: list[str] = []
 
 
@@ -42,6 +45,11 @@ if set(en) != set(ru):
     for key in sorted(set(ru) - set(en))[:50]:
         errors.append(f'RU locale has non-canonical extra key: {key}')
 
+# Shipping English locale must not silently contain Russian user-facing values.
+for key, value in en.items():
+    if isinstance(value, str) and re.search(r'[А-Яа-яЁё]', value):
+        errors.append(f'EN locale contains Cyrillic user-facing value: {key}: {value[:120]}')
+
 cfg = config.read_text(encoding='utf-8')
 for needle in (
     "SUPPORTED_UI_LOCALES = ['en', 'ru']",
@@ -65,7 +73,7 @@ if "code: 'zh'" in const_text or "code: 'hi'" in const_text:
 if "code: 'en'" not in const_text or "code: 'ru'" not in const_text:
     errors.append('widget language switcher must expose EN and RU')
 
-if 'Не удалось' in pricing.read_text(encoding='utf-8') or re.search(r'[А-Яа-яЁё]', pricing.read_text(encoding='utf-8')):
+if re.search(r'[А-Яа-яЁё]', pricing.read_text(encoding='utf-8')):
     errors.append('pricing utility contains localized UI copy; language and billing market must remain separate')
 html = index_html.read_text(encoding='utf-8')
 if '<html lang="en">' not in html:
@@ -104,6 +112,46 @@ for path in src.rglob('*'):
         if not any(re.search(pattern, line) for pattern in patterns):
             errors.append(f'user-facing/unapproved Cyrillic source: openspec-web/src/{rel}:{line_no}: {line.strip()[:180]}')
 
+# International legal documents are locale-specific contractual surfaces.
+legal_slugs = (
+    'offer.md',
+    'privacy.md',
+    'dpa.md',
+    'consent.md',
+    'subprocessors.md',
+    'retention.md',
+    'refunds.md',
+    'acceptable-use.md',
+    'security.md',
+    'cookies.md',
+)
+for filename in legal_slugs:
+    public_path = web_legal_en / filename
+    canonical_path = canonical_legal_en / filename
+    if not public_path.is_file():
+        errors.append(f'missing public EN legal document: {public_path.relative_to(root)}')
+        continue
+    public_text = public_path.read_text(encoding='utf-8')
+    if re.search(r'[А-Яа-яЁё]', public_text):
+        errors.append(f'EN legal document contains Cyrillic: {public_path.relative_to(root)}')
+    if not canonical_path.is_file():
+        errors.append(f'missing canonical EN legal document: {canonical_path.relative_to(root)}')
+    elif canonical_path.read_text(encoding='utf-8') != public_text:
+        errors.append(f'canonical/public EN legal document drift: {filename}')
+
+legal_text = legal_page.read_text(encoding='utf-8')
+for invariant in (
+    "normalizeUiLocale(i18n.language)",
+    "locale === 'ru' ? RU_DOCS : EN_DOCS",
+    "../legal/docs/en/privacy.md?raw",
+    "../legal/docs/en/offer.md?raw",
+    "../legal/docs/en/dpa.md?raw",
+):
+    if invariant not in legal_text:
+        errors.append(f'legal page missing locale-specific legal invariant: {invariant}')
+if 'navigation only and do not replace the legal text' in legal_text:
+    errors.append('legal page still represents English legal content as navigation-only')
+
 # V7 must be part of both official release orchestration paths.
 runner = (root / 'run_release_gate.py').read_text(encoding='utf-8')
 if 'v7-i18n-global-launch' not in runner or 'I18n v7' not in runner:
@@ -140,4 +188,4 @@ if errors:
     for item in errors:
         print(f'- {item}', file=sys.stderr)
     raise SystemExit(1)
-print(f'V7 I18N GLOBAL LAUNCH: PASS (EN/RU {len(en)} keys, approved compatibility Cyrillic only)')
+print(f'V7 I18N GLOBAL LAUNCH: PASS (EN/RU {len(en)} keys, locale-specific legal documents verified)')
