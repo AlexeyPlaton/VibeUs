@@ -58,10 +58,10 @@ type ProjectItem = {
 };
 
 const PLAN_LABEL: Record<Tier, string> = {
-  free: 'Free',
-  solo: 'Solo',
-  studio: 'Studio',
-  business: 'Business',
+  free: tr('v7.dashboard.plans.free'),
+  solo: tr('v7.dashboard.plans.solo'),
+  studio: tr('v7.dashboard.plans.studio'),
+  business: tr('v7.dashboard.plans.business'),
 };
 
 function apiUrl() {
@@ -396,7 +396,7 @@ export function DashboardPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <header className="border-b border-white/10 bg-slate-950/90">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <Link to="/" className="font-bold tracking-tight">VibeUs <span className="text-slate-500 font-medium">workspace</span></Link>
+          <Link to="/" className="font-bold tracking-tight">VibeUs <span className="text-slate-500 font-medium">{tr('v7.dashboard.labels.brand_space')}</span></Link>
           <div className="flex items-center gap-3 text-sm text-slate-400"><LanguageSwitcher compact />
             <span className="hidden sm:inline">{email}</span>
             <button onClick={logout} className="rounded-lg border border-white/10 p-2 hover:bg-white/5" title={tr('v7.dashboard.nav.logout')}><LogOut className="h-4 w-4" /></button>
@@ -411,12 +411,12 @@ export function DashboardPage() {
           <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[.2em] text-slate-500">Workspace</p>
+                <p className="text-xs uppercase tracking-[.2em] text-slate-500">{tr('v7.dashboard.labels.workspace')}</p>
                 {workspaces.length > 1 ? (
                   <select value={workspaceId} onChange={(e) => chooseWorkspace(e.target.value)} className="mt-2 rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-lg font-semibold">
                     {workspaces.map((ws) => <option key={ws.id} value={ws.id}>{ws.name}</option>)}
                   </select>
-                ) : <h1 className="mt-1 text-3xl font-bold">{selectedWorkspace?.name || 'My VibeUs Workspace'}</h1>}
+                ) : <h1 className="mt-1 text-3xl font-bold">{selectedWorkspace?.name || tr('v7.dashboard.labels.default_workspace')}</h1>}
               </div>
               <Link to="/create" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-950"><Plus className="h-4 w-4" />{tr('v7.dashboard.workspace.new_project')}</Link>
             </div>
@@ -431,7 +431,7 @@ export function DashboardPage() {
           <div className="rounded-3xl border border-indigo-400/20 bg-indigo-500/10 p-6">
             <div className="flex items-center gap-2 text-indigo-200"><CreditCard className="h-5 w-5" /><b>{tr('v7.dashboard.billing.title')}</b></div>
             <p className="mt-2 text-sm text-indigo-100/70">{tr('v7.dashboard.billing.copy')}</p>
-            {globalVisible && <div className="mt-4 flex gap-2 text-xs"><button type="button" onClick={() => changeMarket('ru')} className={`rounded-lg px-2.5 py-1.5 ${market === 'ru' ? 'bg-white text-slate-950' : 'border border-white/20 text-white'}`}>{tr('v7.dashboard.market.ru')}</button><button type="button" onClick={() => changeMarket('global')} className={`rounded-lg px-2.5 py-1.5 ${market === 'global' ? 'bg-white text-slate-950' : 'border border-white/20 text-white'}`}>International · $</button></div>}
+            {globalVisible && <div className="mt-4 flex gap-2 text-xs"><button type="button" onClick={() => changeMarket('ru')} className={`rounded-lg px-2.5 py-1.5 ${market === 'ru' ? 'bg-white text-slate-950' : 'border border-white/20 text-white'}`}>{tr('v7.dashboard.market.ru')}</button><button type="button" onClick={() => changeMarket('global')} className={`rounded-lg px-2.5 py-1.5 ${market === 'global' ? 'bg-white text-slate-950' : 'border border-white/20 text-white'}`}>{tr('v7.dashboard.labels.international')}</button></div>}
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button onClick={() => startCheckout('solo')} disabled={busy !== null} className="rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 disabled:opacity-50">{busy === 'billing:solo' ? '...' : `Solo · ${soloPrice}`}</button>
               <button onClick={() => startCheckout('studio')} disabled={busy !== null} className="rounded-xl border border-white/20 px-3 py-2.5 text-sm font-semibold disabled:opacity-50">{busy === 'billing:studio' ? '...' : `Studio · ${studioPrice}`}</button>
@@ -498,7 +498,7 @@ export function DashboardPage() {
                 </span>
                 <span className="text-[10px] font-mono text-rose-400">{tr('v7.dashboard.quick.crashes')}</span>
               </div>
-              <b className="mt-2 block text-sm text-white">3. Runtime Bridge</b>
+              <b className="mt-2 block text-sm text-white">{tr('v7.dashboard.labels.runtime_bridge_step')}</b>
               <p className="mt-1 text-xs text-slate-400">{tr('v7.dashboard.quick.crashes_copy')}</p>
             </div>
 
@@ -519,7 +519,7 @@ export function DashboardPage() {
 
         <section className="mt-8">
           <div className="mb-4 flex items-center justify-between">
-            <div><p className="text-xs uppercase tracking-[.2em] text-slate-500">Projects</p><h2 className="mt-1 text-2xl font-bold">{tr('v7.dashboard.projects.title')}</h2></div>
+            <div><p className="text-xs uppercase tracking-[.2em] text-slate-500">{tr('v7.dashboard.labels.projects_kicker')}</p><h2 className="mt-1 text-2xl font-bold">{tr('v7.dashboard.projects.title')}</h2></div>
             <button onClick={() => refresh(workspaceId)} className="rounded-lg border border-white/10 p-2 text-slate-400 hover:bg-white/5" title={tr('v7.dashboard.projects.refresh')}><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></button>
           </div>
 
@@ -564,7 +564,7 @@ export function DashboardPage() {
 
                     <div className="mt-5 grid gap-3 lg:grid-cols-3">
                       <div className="rounded-2xl bg-black/20 p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold"><Shield className="h-4 w-4 text-emerald-400" /> Public Widget Key</div>
+                        <div className="flex items-center gap-2 text-sm font-semibold"><Shield className="h-4 w-4 text-emerald-400" /> {tr('v7.dashboard.labels.public_widget_key')}</div>
                         {project.public_widget_key ? (
                           <><code className="mt-3 block overflow-hidden text-ellipsis whitespace-nowrap text-xs text-emerald-200">{project.public_widget_key}</code><div className="mt-3 flex flex-wrap gap-2"><button onClick={() => copy(project.public_widget_key!, `pub:${project.slug}`)} className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-950">{copied === `pub:${project.slug}` ? <Check className="inline h-3 w-3" /> : <Copy className="inline h-3 w-3" />} {tr('v7.dashboard.projects.copy')}</button><button onClick={() => rotatePublicKey(project)} disabled={busy !== null} className="rounded-lg border border-white/10 px-3 py-2 text-xs">{tr('v7.dashboard.projects.rotate')}</button>{embed && <button onClick={() => copy(embed, `embed:${project.slug}`)} className="rounded-lg border border-white/10 px-3 py-2 text-xs">{tr('v7.dashboard.projects.widget_code')}</button>}</div></>
                         ) : (
@@ -573,7 +573,7 @@ export function DashboardPage() {
                       </div>
 
                       <div className="rounded-2xl bg-black/20 p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold"><Activity className="h-4 w-4 text-rose-400" /> Runtime Ingest Key</div>
+                        <div className="flex items-center gap-2 text-sm font-semibold"><Activity className="h-4 w-4 text-rose-400" /> {tr('v7.dashboard.labels.runtime_ingest_key')}</div>
                         <p className="mt-3 text-xs text-slate-400">{tr('v7.dashboard.projects.secret_once')}</p>
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           <span className={`rounded px-2 py-1 text-[10px] font-semibold ${project.ingest_key_configured ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-200'}`}>{project.ingest_key_configured ? tr('v7.dashboard.projects.key_configured') : tr('v7.dashboard.projects.key_missing')}</span>
@@ -586,7 +586,7 @@ export function DashboardPage() {
                       </div>
 
                       <div className="rounded-2xl bg-black/20 p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="h-4 w-4 text-indigo-400" /> API Token</div>
+                        <div className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="h-4 w-4 text-indigo-400" /> {tr('v7.dashboard.labels.api_token')}</div>
                         <p className="mt-3 text-xs text-slate-400">{tr('v7.dashboard.projects.api_digest')}</p>
                         <button onClick={() => rotateApiToken(project)} disabled={busy !== null} className="mt-3 rounded-lg border border-white/10 px-3 py-2 text-xs">{tr('v7.dashboard.projects.rotate_api')}</button>
                       </div>
