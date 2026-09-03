@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import auth
+import cloudpayments_refund_service
 import cloudpayments_service
 import models
 import yookassa_service
@@ -56,8 +57,6 @@ async def create_checkout(
     user: models.User = Depends(auth.get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # Import lazily to avoid a module cycle: the canonical return-url validator
-    # currently belongs to the legacy API module while it is being extracted.
     import main_legacy as legacy
 
     cfg = get_settings()
@@ -102,6 +101,22 @@ async def create_checkout(
             detail="International checkout currently requires business/professional-use confirmation",
         )
 
+    # Immutable evidence of why this hosted international checkout was allowed.
+    # Keeping it in the audit ledger avoids inferring country later from locale/IP
+    # and makes tax/legal review possible even if provider metadata changes.
+    db.add(models.AuditEvent(
+        workspace_id=workspace.id,
+        user_id=user.id,
+        event_type="billing.international_scope_confirmed",
+        details={
+            "billing_country": country,
+            "business_use_confirmed": True,
+            "tier": data.tier,
+            "provider": cfg.global_billing_provider,
+        },
+    ))
+    await db.commit()
+
     provider = cfg.global_billing_provider
     if provider == "cloudpayments":
         result = await cloudpayments_service.create_order(
@@ -114,8 +129,6 @@ async def create_checkout(
         )
         return CheckoutResponse(**result)
 
-    # Compatibility remains explicit rather than silently choosing another
-    # provider. A deployment must know which merchant contract is active.
     raise HTTPException(
         status_code=503,
         detail=f"Configured global billing provider '{provider}' is not enabled by the unified checkout",
@@ -139,4 +152,6 @@ async def cloudpayments_fail(request: Request, db: AsyncSession = Depends(get_db
 
 @router.post("/cloudpayments/refund")
 async def cloudpayments_refund(request: Request, db: AsyncSession = Depends(get_db)):
-    return await cloudpayments_service.process_refund(await request.body(), request.headers, db)
+    return await cloudpayments_refund_service.process_refund(
+        await request.body(), request.headers, db
+    )
