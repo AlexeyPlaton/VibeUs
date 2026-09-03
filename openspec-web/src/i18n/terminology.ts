@@ -7,6 +7,10 @@ export const terminologyEn = {
       workspace: {
         default_name: 'My VibeUs Workspace',
       },
+      form: {
+        address: 'Project slug',
+        address_help: 'A short Latin-character identifier used in URLs and command-line examples.',
+      },
       labels: {
         api_token: 'API Token',
         one_time_secret: 'SECRET · one-time view',
