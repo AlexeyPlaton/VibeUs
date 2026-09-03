@@ -1,8 +1,11 @@
-from sqlalchemy import Column, String, Text, Boolean, Integer, ForeignKey, JSON, DateTime, UniqueConstraint, CheckConstraint
+from sqlalchemy import Column, String, Text, Boolean, Integer, ForeignKey, JSON, DateTime, UniqueConstraint, CheckConstraint, event
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime, timezone
 from typing import Optional
 import uuid
+
+from legal_acceptance_context import clear_pending_legal_acceptance, peek_pending_legal_acceptance
+
 
 def utcnow():
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -23,6 +26,7 @@ class User(Base):
 
     memberships = relationship('WorkspaceMembership', back_populates='user', cascade='all, delete-orphan')
     sessions = relationship('Session', back_populates='user', cascade='all, delete-orphan')
+    legal_acceptances = relationship('LegalAcceptance', back_populates='user', cascade='all, delete-orphan')
 
 class Session(Base):
     __tablename__ = 'sessions'
@@ -214,11 +218,11 @@ class SpecTicket(Base):
 class Payment(Base):
     __tablename__ = 'payments'
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    provider = Column(String, nullable=False, default='yookassa') # yookassa, stripe, b2b
+    provider = Column(String, nullable=False, default='yookassa') # yookassa, stripe, lava, robokassa, b2b
     provider_payment_id = Column(String, unique=True, nullable=False, index=True)
     workspace_id = Column(String, ForeignKey('workspaces.id'), nullable=False, index=True)
     plan = Column(String, nullable=False) # solo, studio
-    amount_minor = Column(Integer, nullable=False) # in rubles or cents
+    amount_minor = Column(Integer, nullable=False) # in provider currency minor units
     currency = Column(String, nullable=False, default='RUB')
     status = Column(String, nullable=False, default='pending') # pending, succeeded, canceled, refunded
     is_test = Column(Boolean, default=False)
@@ -303,6 +307,70 @@ class AuditEvent(Base):
     ip_address = Column(String, nullable=True)
     details = Column(JSON, default=dict)
     created_at = Column(DateTime, default=utcnow)
+
+class LegalAcceptance(Base):
+    """Immutable per-document acceptance evidence captured at registration."""
+    __tablename__ = 'legal_acceptances'
+    __table_args__ = (
+        UniqueConstraint('user_id', 'document_type', 'document_version', name='uq_legal_acceptance_user_document_version'),
+        CheckConstraint(
+            "document_type IN ('terms', 'privacy_acknowledgement', 'personal_data_consent')",
+            name='ck_legal_acceptances_document_type',
+        ),
+        CheckConstraint("legal_locale IN ('en', 'ru')", name='ck_legal_acceptances_locale'),
+    )
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    document_type = Column(String(32), nullable=False)
+    document_version = Column(String(32), nullable=False)
+    legal_locale = Column(String(2), nullable=False)
+    accepted_at = Column(DateTime, nullable=False, default=utcnow)
+    source = Column(String(32), nullable=False, default='registration')
+
+    user = relationship('User', back_populates='legal_acceptances')
+
+
+@event.listens_for(User, 'after_insert')
+def _persist_registration_legal_acceptances(_mapper, connection, target: User) -> None:
+    """Persist separately validated legal facts in the account transaction."""
+    pending = peek_pending_legal_acceptance()
+    if not pending or str(pending.get('email') or '').lower() != str(target.email or '').lower():
+        return
+
+    accepted_at = utcnow()
+    locale = str(pending['legal_locale'])
+    rows = [
+        {
+            'id': str(uuid.uuid4()),
+            'user_id': target.id,
+            'document_type': 'terms',
+            'document_version': str(pending['terms_version']),
+            'legal_locale': locale,
+            'accepted_at': accepted_at,
+            'source': 'registration',
+        },
+        {
+            'id': str(uuid.uuid4()),
+            'user_id': target.id,
+            'document_type': 'privacy_acknowledgement',
+            'document_version': str(pending['privacy_version']),
+            'legal_locale': locale,
+            'accepted_at': accepted_at,
+            'source': 'registration',
+        },
+    ]
+    if pending.get('consent_personal_data'):
+        rows.append({
+            'id': str(uuid.uuid4()),
+            'user_id': target.id,
+            'document_type': 'personal_data_consent',
+            'document_version': str(pending['personal_data_consent_version']),
+            'legal_locale': locale,
+            'accepted_at': accepted_at,
+            'source': 'registration',
+        })
+    connection.execute(LegalAcceptance.__table__.insert(), rows)
+    clear_pending_legal_acceptance()
 
 class PromoCode(Base):
     __tablename__ = 'promo_codes'
@@ -389,5 +457,3 @@ class ErrorOccurrence(Base):
     created_at = Column(DateTime, default=utcnow)
 
     group = relationship('ErrorGroup', back_populates='occurrences')
-
-
