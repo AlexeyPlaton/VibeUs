@@ -1,0 +1,67 @@
+/* Theme bridge for legacy board dialogs that still use slate utility classes. */
+
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"][class*="bg-slate-950/80"],
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"][class*="bg-black/75"] {
+  background: rgba(16, 24, 40, 0.42) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] > div[class*="bg-slate-900"],
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] > div[class*="bg-slate-950"] {
+  border-color: var(--vb-border) !important;
+  background: var(--vb-surface) !important;
+  color: var(--vb-text) !important;
+  box-shadow: var(--vb-shadow) !important;
+  backdrop-filter: none !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class~="text-white"],
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class~="text-slate-100"],
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class~="text-slate-200"] {
+  color: var(--vb-text) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class~="text-slate-300"] {
+  color: var(--vb-text-secondary) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class~="text-slate-400"],
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class~="text-slate-500"],
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class~="text-slate-600"] {
+  color: var(--vb-muted) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class*="bg-slate-950"],
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class*="bg-slate-900"],
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class*="bg-slate-800"] {
+  background-color: var(--vb-canvas-subtle) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class*="border-slate"],
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] [class*="border-white"] {
+  border-color: var(--vb-border) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] input,
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] textarea,
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] select,
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] option {
+  border-color: var(--vb-border) !important;
+  background-color: var(--vb-canvas-subtle) !important;
+  color: var(--vb-text) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] input::placeholder,
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] textarea::placeholder {
+  color: var(--vb-faint) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] code,
+.vibe-enterprise-shell.vibe-theme-light [class*="fixed inset-0"] pre {
+  color: var(--vb-text-secondary);
+}
+
+.vibe-enterprise-shell [role="dialog"],
+.vibe-enterprise-shell [aria-modal="true"] {
+  scrollbar-gutter: stable;
+}
