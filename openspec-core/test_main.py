@@ -58,14 +58,24 @@ async def async_client():
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
-async def get_auth_headers(client: AsyncClient, email: str = "tester@vibus.dev") -> dict:
-    await client.post("/api/auth/register", json={
+
+def legal_registration_payload(email: str) -> dict:
+    return {
         "email": email,
         "password": "Correct-Horse-42!Battery",
+        "legal_locale": "en",
         "accept_terms": True,
+        "acknowledge_privacy": True,
+        "consent_personal_data": False,
         "terms_version": "test-v1",
         "privacy_version": "test-v1",
-    })
+        "personal_data_consent_version": None,
+    }
+
+
+async def get_auth_headers(client: AsyncClient, email: str = "tester@vibus.dev") -> dict:
+    reg = await client.post("/api/auth/register", json=legal_registration_payload(email))
+    assert reg.status_code == 200, reg.text
     res = await client.post("/api/auth/login", json={"email": email, "password": "Correct-Horse-42!Battery"})
     token = res.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -233,7 +243,8 @@ async def test_nodes_and_tickets_crud_and_soft_delete(async_client: AsyncClient)
 
 def test_websocket_strict_auth():
     with TestClient(app) as client:
-        client.post("/api/auth/register", json={"email": "ws_user@vibus.dev", "password": "Correct-Horse-42!Battery", "accept_terms": True, "terms_version": "test-v1", "privacy_version": "test-v1"})
+        reg = client.post("/api/auth/register", json=legal_registration_payload("ws_user@vibus.dev"))
+        assert reg.status_code == 200, reg.text
         l_res = client.post("/api/auth/login", json={"email": "ws_user@vibus.dev", "password": "Correct-Horse-42!Battery"})
         auth_hdr = {"Authorization": f"Bearer {l_res.json()['access_token']}"}
 
