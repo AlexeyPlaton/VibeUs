@@ -3,6 +3,7 @@ import { initReactI18next } from 'react-i18next';
 
 import en from './locales/en.json';
 import ru from './locales/ru.json';
+import { v8En, v8Ru } from './v8';
 
 export const SUPPORTED_UI_LOCALES = ['en', 'ru'] as const;
 export type SupportedUiLocale = (typeof SUPPORTED_UI_LOCALES)[number];
@@ -13,8 +14,20 @@ export const UI_LOCALE_LABELS: Record<SupportedUiLocale, string> = {
 };
 
 const resources = {
-  en: { translation: en },
-  ru: { translation: ru },
+  en: {
+    translation: {
+      ...en,
+      public_feedback: v8En.public_feedback,
+      feedback: { ...((en as any).feedback || {}), ...v8En.feedback },
+    },
+  },
+  ru: {
+    translation: {
+      ...ru,
+      public_feedback: v8Ru.public_feedback,
+      feedback: { ...((ru as any).feedback || {}), ...v8Ru.feedback },
+    },
+  },
 };
 
 export function normalizeUiLocale(value?: string | null): SupportedUiLocale | null {
