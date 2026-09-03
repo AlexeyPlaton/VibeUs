@@ -6,6 +6,7 @@ import { VibusWidgetUI } from './components/VibusWidgetUI';
 import './index.css';
 import './widget-responsive.css';
 import './enterprise-board.css';
+import './enterprise-dialogs.css';
 
 type WidgetThemePreference = 'dark' | 'light' | 'auto';
 type ResolvedWidgetTheme = 'dark' | 'light';
