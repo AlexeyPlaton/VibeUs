@@ -59,9 +59,19 @@ test('quick task creation is available in every active work column', () => {
   assert.doesNotMatch(column, />🟢 Low</);
 });
 
-test('enterprise board stylesheet is loaded in app and widget builds', () => {
+test('light theme also covers board dialogs and form controls', () => {
+  const dialogs = read('src/enterprise-dialogs.css');
+  assert.match(dialogs, /vibe-theme-light[\s\S]*fixed inset-0/);
+  assert.match(dialogs, /background:\s*var\(--vb-surface\)/);
+  assert.match(dialogs, /input::placeholder/);
+  assert.match(dialogs, /background-color:\s*var\(--vb-canvas-subtle\)/);
+});
+
+test('enterprise board and dialog stylesheets are loaded in app and widget builds', () => {
   const main = read('src/main.tsx');
   const widget = read('src/widget.tsx');
-  assert.match(main, /enterprise-board\.css/);
-  assert.match(widget, /enterprise-board\.css/);
+  for (const source of [main, widget]) {
+    assert.match(source, /enterprise-board\.css/);
+    assert.match(source, /enterprise-dialogs\.css/);
+  }
 });
