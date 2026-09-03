@@ -4,30 +4,56 @@ import { initReactI18next } from 'react-i18next';
 import en from './locales/en.json';
 import ru from './locales/ru.json';
 import { v8En, v8Ru } from './v8';
+import { editorialEn, editorialRu } from './editorial';
 
 export const SUPPORTED_UI_LOCALES = ['en', 'ru'] as const;
 export type SupportedUiLocale = (typeof SUPPORTED_UI_LOCALES)[number];
 
 export const UI_LOCALE_LABELS: Record<SupportedUiLocale, string> = {
   en: 'English',
-  ru: 'RU',
+  ru: 'Русский',
 };
 
+function mergeDeep<T extends Record<string, any>>(base: T, override: Record<string, any>): T {
+  const result: Record<string, any> = { ...base };
+  for (const [key, value] of Object.entries(override)) {
+    if (
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      result[key] &&
+      typeof result[key] === 'object' &&
+      !Array.isArray(result[key])
+    ) {
+      result[key] = mergeDeep(result[key], value as Record<string, any>);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result as T;
+}
+
+const enTranslation = mergeDeep(
+  {
+    ...en,
+    public_feedback: v8En.public_feedback,
+    feedback: { ...((en as any).feedback || {}), ...v8En.feedback },
+  },
+  editorialEn,
+);
+
+const ruTranslation = mergeDeep(
+  {
+    ...ru,
+    public_feedback: v8Ru.public_feedback,
+    feedback: { ...((ru as any).feedback || {}), ...v8Ru.feedback },
+  },
+  editorialRu,
+);
+
 const resources = {
-  en: {
-    translation: {
-      ...en,
-      public_feedback: v8En.public_feedback,
-      feedback: { ...((en as any).feedback || {}), ...v8En.feedback },
-    },
-  },
-  ru: {
-    translation: {
-      ...ru,
-      public_feedback: v8Ru.public_feedback,
-      feedback: { ...((ru as any).feedback || {}), ...v8Ru.feedback },
-    },
-  },
+  en: { translation: enTranslation },
+  ru: { translation: ruTranslation },
 };
 
 export function normalizeUiLocale(value?: string | null): SupportedUiLocale | null {
@@ -79,11 +105,6 @@ i18n.on('languageChanged', (lng) => {
   syncDocumentLanguage(normalized);
 });
 
-/**
- * Translation helper for callbacks and module-level copy definitions.
- * UI surfaces still subscribe through react-i18next; the language switcher
- * reloads after a locale change so module-level translated constants refresh too.
- */
 export function tr(key: string, options?: TOptions): string {
   return String(options ? i18n.t(key, options) : i18n.t(key));
 }
