@@ -81,9 +81,9 @@ export function InternationalCheckoutPage() {
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-indigo-300/20 bg-indigo-500/15 text-indigo-200">
               <CreditCard className="h-5 w-5" />
             </div>
-            <h1 className="mt-5 text-2xl font-bold">International checkout</h1>
+            <h1 className="mt-5 text-2xl font-bold">{tr('international_checkout.title')}</h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              VibeUs needs the billing country before opening the payment provider. This is separate from your UI language or card-issuer location.
+              {tr('international_checkout.subtitle')}
             </p>
           </div>
 
@@ -91,18 +91,18 @@ export function InternationalCheckoutPage() {
             {error && <div className="rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-200">{error}</div>}
 
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div className="text-xs uppercase tracking-[.16em] text-slate-500">Plan</div>
+              <div className="text-xs uppercase tracking-[.16em] text-slate-500">{tr('international_checkout.plan')}</div>
               <div className="mt-1 text-lg font-bold">{tier === 'studio' ? 'Studio' : 'Solo'}</div>
             </div>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-semibold">Billing country</span>
+              <span className="mb-2 block text-sm font-semibold">{tr('international_checkout.billing_country')}</span>
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-indigo-400/50"
               >
-                <option value="">Select country…</option>
+                <option value="">{tr('international_checkout.select_country')}</option>
                 {countries.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
               </select>
             </label>
@@ -114,12 +114,12 @@ export function InternationalCheckoutPage() {
                 onChange={(e) => setBusinessUse(e.target.checked)}
                 className="mt-1 h-4 w-4 shrink-0"
               />
-              <span>I confirm this purchase is for business or professional use and that the billing details I provide are accurate.</span>
+              <span>{tr('international_checkout.business_use')}</span>
             </label>
 
             <div className="flex gap-3 rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.06] p-4 text-xs leading-relaxed text-emerald-100/80">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-              Payment return pages do not activate a plan by themselves. VibeUs waits for a verified provider notification before granting access.
+              {tr('international_checkout.verification_notice')}
             </div>
 
             <button
@@ -129,11 +129,11 @@ export function InternationalCheckoutPage() {
               className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Continue to secure payment
+              {tr('international_checkout.continue')}
             </button>
 
             <p className="text-center text-[11px] leading-relaxed text-slate-500">
-              Paid hosted availability depends on country and the active payment-provider contract. <Link className="underline hover:text-slate-300" to="/legal/offer">Terms</Link>
+              {tr('international_checkout.availability')} <Link className="underline hover:text-slate-300" to="/legal/offer">{tr('international_checkout.terms')}</Link>
             </p>
           </div>
         </main>
