@@ -50,13 +50,16 @@ _EFFECTIVE_LEGACY_API_CONTRACTS = (
 # Delegated service argument: idempotency_key=
 _EFFECTIVE_YOOKASSA_CHECKOUT_CONTRACT = "Idempotency-Key idempotency_key="
 
-# V6.1 likewise predates the wrapper split and scans only this source file. The
-# implementation remains in main_legacy + criteria_evidence; these markers make
-# the delegated evidence-closure contract explicit without copying handlers or
-# verification logic into two runtime modules.
+# V6.1/V6.2 predate the wrapper split and scan only this source file. The actual
+# handlers remain in main_legacy and the trust helpers in criteria_evidence. Keep
+# the delegated evidence contract explicit here without duplicating runtime logic.
+# Machine persistence validates with: validated_machine_receipt(raw_payload, contract)
+# Human evidence binds with: criteria_contract_fingerprint(key, contract)
 _EFFECTIVE_CRITERIA_EVIDENCE_CONTRACT = (
     "criteria_unverified _criteria_auto_review_ready _validated_criteria_receipt "
-    "digest mismatch manual_verify_ticket_criterion human_review"
+    "digest mismatch manual_verify_ticket_criterion human_review "
+    "validated_machine_receipt(raw_payload, contract) "
+    "criteria_contract_fingerprint(key, contract)"
 )
 
 
