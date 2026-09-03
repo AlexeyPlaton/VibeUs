@@ -14,7 +14,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import auth
-import crud
 import main_legacy as legacy
 import models
 import schemas
@@ -152,8 +151,13 @@ async def update_project_error_status(
     }
 
 
-# Re-export names commonly imported by tests and deployment scripts.
+# Re-export common names explicitly and fall back to the legacy module for older
+# tests/scripts that import helpers directly from ``main``.
 settings = legacy.settings
 lifespan = legacy.lifespan
 health = legacy.health
 readiness_check = legacy.readiness_check
+
+
+def __getattr__(name: str):
+    return getattr(legacy, name)
