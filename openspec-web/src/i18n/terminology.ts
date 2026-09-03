@@ -78,6 +78,12 @@ export const terminologyEn = {
       },
       qa_author: 'QA / Lead',
     },
+    project_board: {
+      subtitle: 'Task board, specification, and readiness criteria',
+      switch_to_light: 'Switch to light theme',
+      switch_to_dark: 'Switch to dark theme',
+      close: 'Close board',
+    },
   },
 };
 
@@ -229,6 +235,9 @@ export const terminologyRu = {
     },
     project_board: {
       subtitle: 'Доска задач, спецификация и критерии готовности',
+      switch_to_light: 'Включить светлую тему',
+      switch_to_dark: 'Включить тёмную тему',
+      close: 'Закрыть доску',
     },
   },
   bug: {
