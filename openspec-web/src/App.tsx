@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
 import { CreateProjectPage } from './pages/CreateProjectPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { InternationalCheckoutPage } from './pages/InternationalCheckoutPage';
 import { LegalPage } from './pages/legalpage';
 import './index.css';
 
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/create" element={<CreateProjectPage />} />
         <Route path="/app" element={<DashboardPage />} />
+        <Route path="/billing/international" element={<InternationalCheckoutPage />} />
         <Route path="/legal/:doc" element={<LegalPage />} />
       </Routes>
     </BrowserRouter>
