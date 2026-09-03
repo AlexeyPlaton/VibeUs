@@ -1,0 +1,87 @@
+import { expect, test, type Page } from '@playwright/test';
+
+async function registerAndCreateFreeProject(page: Page) {
+  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  await page.goto('/create');
+
+  await page.getByRole('button', { name: /register|sign up|регистра/i }).click();
+  await page.getByPlaceholder('developer@example.com').fill(`e2e-${suffix}@example.com`);
+  await page.locator('input[type="password"]').fill('E2E-password-12345!');
+  await page.locator('input[type="checkbox"]').check();
+  await page.locator('form button[type="submit"]').click();
+
+  await expect(page.locator('input[placeholder="frontend-redesign"]')).toBeVisible();
+  const requiredInputs = page.locator('form input[required]');
+  await requiredInputs.first().fill(`E2E ${suffix}`);
+  await page.locator('input[placeholder="frontend-redesign"]').fill(`e2e-${suffix}`);
+  await page.locator('form button[type="submit"]').click();
+
+  await expect(page.getByText('API Token', { exact: true })).toBeVisible();
+  const publicKey = await page.locator('input[readonly]').evaluateAll((nodes) => {
+    const values = nodes.map((node) => (node as HTMLInputElement).value);
+    return values.find((value) => value.startsWith('vb_pub_')) || '';
+  });
+  expect(publicKey).toMatch(/^vb_pub_/);
+
+  const workspaceId = await page.evaluate(() => localStorage.getItem('vibeus_workspace_id') || '');
+  expect(workspaceId).not.toBe('');
+  return { publicKey, workspaceId };
+}
+
+
+test('register -> free project -> one-time credentials', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Primary account journey runs once on desktop');
+  await registerAndCreateFreeProject(page);
+});
+
+
+test('international checkout requires country and blocks current EEA/UK scope', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Billing decision flow runs once on desktop');
+  const { workspaceId } = await registerAndCreateFreeProject(page);
+  const success = 'http://localhost:5173/app?payment=return&market=global';
+  const cancel = 'http://localhost:5173/app?payment=cancel&market=global';
+
+  await page.goto(`/billing/international?workspace=${encodeURIComponent(workspaceId)}&tier=solo&success=${encodeURIComponent(success)}&cancel=${encodeURIComponent(cancel)}`);
+  await expect(page.getByRole('heading', { name: /international checkout/i })).toBeVisible();
+  await page.locator('select').selectOption('DE');
+  await page.locator('input[type="checkbox"]').check();
+  await page.getByRole('button', { name: /continue to secure payment/i }).click();
+  await expect(page.getByText(/not yet offered in the EEA or UK/i)).toBeVisible();
+
+  await page.locator('select').selectOption('US');
+  await page.getByRole('button', { name: /continue to secure payment/i }).click();
+  await page.waitForURL(/payment=return/);
+});
+
+
+test('standalone public widget mounts in Shadow DOM and exposes compact feedback form', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-chromium', 'Widget journey is intentionally exercised on mobile viewport');
+  const { publicKey } = await registerAndCreateFreeProject(page);
+
+  await page.goto('/');
+  await page.evaluate(({ publicKey }) => {
+    document.querySelectorAll('vibus-widget, vibeus-widget').forEach((node) => node.remove());
+    const script = document.createElement('script');
+    script.src = 'http://localhost:8000/static/vibus-widget.umd.cjs';
+    script.dataset.project = Array.from(document.querySelectorAll('input')).find((node) => (node as HTMLInputElement).value.startsWith('e2e-'))?.getAttribute('value') || '';
+    script.dataset.publicKey = publicKey;
+    script.dataset.server = 'http://localhost:8000';
+    script.dataset.mode = 'public_feedback';
+    document.body.appendChild(script);
+  }, { publicKey });
+
+  const widget = page.locator('vibus-widget');
+  await expect(widget).toBeAttached();
+  await expect.poll(async () => widget.evaluate((el: any) => Boolean(el.shadowRoot?.querySelector('#vibeWidgetBtn')))).toBe(true);
+  await widget.evaluate((el: any) => (el.shadowRoot?.querySelector('#vibeWidgetBtn') as HTMLElement | null)?.click());
+  await expect.poll(async () => widget.evaluate((el: any) => el.shadowRoot?.textContent?.includes('Send feedback') || el.shadowRoot?.textContent?.includes('Отправить'))).toBe(true);
+
+  const box = await widget.evaluate((el: any) => {
+    const panel = el.shadowRoot?.querySelector('.spatial-kanban') as HTMLElement | null;
+    if (!panel) return null;
+    const rect = panel.getBoundingClientRect();
+    return { width: rect.width, height: rect.height, viewport: window.innerWidth };
+  });
+  expect(box).not.toBeNull();
+  expect(box!.width).toBeLessThanOrEqual(box!.viewport);
+});
