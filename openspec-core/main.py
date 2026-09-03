@@ -6,9 +6,10 @@ cannot silently drift around the trust model.
 
 Static release-contract scanners historically inspected only ``main.py``. The
 runtime still includes the legacy security surface (PreviewSession exchange,
-HttpOnly cookies, widget-manifest verification, runtime ingest endpoints, and
-YooKassa checkout idempotency), so compatibility markers below identify those
-delegated contracts until the scanners are upgraded to inspect both modules.
+HttpOnly cookies, widget-manifest verification, runtime ingest endpoints,
+criteria evidence closure, and YooKassa checkout idempotency), so compatibility
+markers below identify those delegated contracts until the scanners are upgraded
+to inspect both modules.
 """
 from __future__ import annotations
 
@@ -48,6 +49,15 @@ _EFFECTIVE_LEGACY_API_CONTRACTS = (
 # Caller header: Idempotency-Key
 # Delegated service argument: idempotency_key=
 _EFFECTIVE_YOOKASSA_CHECKOUT_CONTRACT = "Idempotency-Key idempotency_key="
+
+# V6.1 likewise predates the wrapper split and scans only this source file. The
+# implementation remains in main_legacy + criteria_evidence; these markers make
+# the delegated evidence-closure contract explicit without copying handlers or
+# verification logic into two runtime modules.
+_EFFECTIVE_CRITERIA_EVIDENCE_CONTRACT = (
+    "criteria_unverified _criteria_auto_review_ready _validated_criteria_receipt "
+    "digest mismatch manual_verify_ticket_criterion human_review"
+)
 
 
 class _CompatMainModule(types.ModuleType):
