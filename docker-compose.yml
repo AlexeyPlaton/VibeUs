@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: vibus_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: vibus
+    ports:
+      - "5433:5432"
+    volumes:
+      - vibus_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./openspec-core
+      dockerfile: Dockerfile
+    container_name: vibus_api
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./openspec-web/dist-widget:/app/static:ro
+
+  nginx:
+    image: nginx:alpine
+    container_name: vibus_nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./openspec-web/dist-landing:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+volumes:
+  vibus_pgdata:

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /app
+
+Sitemap: https://vibeus.pro/sitemap.xml

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "generated_at": "2026-09-03T06:55:07.462Z",
+  "build_mode": "widget",
+  "files": {
+    "vibus-widget.umd.cjs": {
+      "bytes": 4183806,
+      "sha256": "9715547ff62860b76149717f54755e4630c4f4e2a326af423a9a336a367445e4"
+    },
+    "vibus-widget.css": {
+      "bytes": 104139,
+      "sha256": "e7aae1a9d71b1cd5e01745e3025f2660e7f9ece2d907f0d995ccfaf573321a43"
+    }
+  }
+}

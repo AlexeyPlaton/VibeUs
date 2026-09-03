@@ -1,0 +1,45 @@
+{
+  "name": "vibus-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" vite build",
+    "build:widget": "npm run build:widget:dist && npm run sync:widget",
+    "build:landing": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" vite build",
+    "build:all": "npm run build:widget && npm run build:landing",
+    "lint": "oxlint",
+    "test": "npm run test:contracts && npm run test:case-imports && npm run typecheck && npm run lint",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty false",
+    "test:contracts": "node --test test_release_contracts.mjs",
+    "build:widget:dist": "cross-env BUILD_MODE=widget NODE_OPTIONS=\"--max-old-space-size=4096\" vite build",
+    "sync:widget": "node scripts/sync-widget-to-core.mjs",
+    "test:case-imports": "node scripts/check-case-sensitive-imports.mjs"
+  },
+  "dependencies": {
+    "i18next": "^26.4.0",
+    "lucide-react": "^1.33.0",
+    "mermaid": "^11.17.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-i18next": "^17.0.12",
+    "react-router-dom": "^7.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.1.0",
+    "cross-env": "^7.0.3",
+    "oxlint": "^1.79.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2"
+  }
+}

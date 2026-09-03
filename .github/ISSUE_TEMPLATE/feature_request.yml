@@ -1,0 +1,44 @@
+name: Feature Request
+description: Suggest a new feature for Vibus
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Description
+      description: Is your feature request related to a problem? Please describe.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or features you've considered.
+    validations:
+      required: false
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Backend API
+        - Frontend Widget
+        - CLI
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context or screenshots about the feature request here.
+    validations:
+      required: false

@@ -1,0 +1,15 @@
+Исправляй только production-код репозитория openspec. Quality Gate v3.3.2 НЕ ИЗМЕНЯТЬ.
+
+Работа завершена только когда одновременно:
+- v3.3.2 pytest = 12/12 PASS;
+- v3.3.2 Node = 3/3 PASS;
+- openspec-web npm run build:all = PASS;
+- v3.3.1 = 16/16 + build PASS;
+- v3.3 = 30/30 PASS;
+- вся старая regression matrix остаётся зелёной;
+- frontend build проходит на case-sensitive Linux filesystem;
+- staging /widget.js и /widget.css отдают 200.
+
+Критические инварианты: commit=False обязан flush ticket.id; feedback/discussion conversion сохраняют реальный id и создают ровно один ticket; один conversion = +1 project.revision; authenticated REST и fetchBoard используют тот же stable X-Device-Fingerprint, что WS auth; WS mutation увеличивает ticket.revision; duplicate ACK не может превратить revision в undefined; client_preview обязан потреблять auth_ok.capabilities; identity-creating REST actions делают authoritative reconciliation без зависимости от WS; feature flags реально fail-closed; tunnel forever не превращается молча в 7d.
+
+Не редактируй tests/runner/manifest и не добавляй мёртвые строки ради grep. Полный контракт см. AGENT_TASK_RU.md.

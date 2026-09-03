@@ -1,0 +1,109 @@
+name: release-gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openspec-core
+    env:
+      ENVIRONMENT: test
+      TESTING: "true"
+      TOKEN_PEPPER: ci_only_token_pepper_please_replace_1234567890
+      FIELD_ENCRYPTION_KEY: ci_only_field_key_please_replace_12345678901234567890
+      ENABLE_DEMO_SEED: "false"
+      ENABLE_MOCK_BILLING: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: openspec-core/requirements.txt
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - run: python -m compileall -q .
+      - run: python -m pytest -q
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openspec-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: openspec-web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:all
+      - name: Verify embedded-widget build handoff
+        run: |
+          test -s ../openspec-core/static/vibus-widget.umd.cjs
+          test -s ../openspec-core/static/vibus-widget.css
+          test -s ../openspec-core/static/widget-build-manifest.json
+          node -e "const m=require('../openspec-core/static/widget-build-manifest.json'); if(!m.files?.['vibus-widget.umd.cjs']?.sha256) process.exit(1)"
+
+  cli:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openspec-cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: openspec-cli/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: openspec-core/requirements.txt
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r openspec-core/requirements.txt
+      - name: Quality Gate v4 (Release Integrity)
+        run: |
+          python quality-gates/v4-release-integrity/verify_integrity.py
+          python -m pytest -q quality-gates/v4-release-integrity/tests
+      - name: Quality Gate v5 (Billing Ledger Closure)
+        run: |
+          python quality-gates/v5-billing-ledger-closure/verify_integrity.py
+          python -m pytest -q quality-gates/v5-billing-ledger-closure/tests
+      - name: Quality Gate v6 (Criteria Contract v2)
+        run: |
+          python quality-gates/v6-criteria-contract/verify_contract_v2.py .
+      - name: Quality Gate v6.1 (Evidence Closure)
+        run: |
+          python quality-gates/v6.1-evidence-closure/verify_evidence_closure.py .
+          node --test quality-gates/v6.1-evidence-closure/tests-js/evidence_closure.test.mjs
+          python quality-gates/v6.1-evidence-closure/scripts/migration_smoke.py .
+      - name: Quality Gate v6.2 (Trusted Evidence Binding)
+        run: |
+          python quality-gates/v6.2-trusted-evidence/verify_trusted_evidence.py .
+          node --test quality-gates/v6.2-trusted-evidence/tests-js/trusted_evidence.test.mjs
+          python -m pytest -q quality-gates/v6.2-trusted-evidence/tests
+      - name: Quality Gate v7 (I18N Global Launch)
+        run: |
+          python quality-gates/v7-i18n-global-launch/verify_i18n_global_launch.py .
+          node --test quality-gates/v7-i18n-global-launch/tests-js/i18n_contract.test.mjs

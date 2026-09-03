@@ -1,0 +1,21 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { LandingPage } from './pages/LandingPage';
+import { CreateProjectPage } from './pages/CreateProjectPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { LegalPage } from './pages/legalpage';
+import './index.css';
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/create" element={<CreateProjectPage />} />
+        <Route path="/app" element={<DashboardPage />} />
+        <Route path="/legal/:doc" element={<LegalPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

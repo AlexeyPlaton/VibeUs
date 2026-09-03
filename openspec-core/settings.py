@@ -1,0 +1,115 @@
+from functools import lru_cache
+from decimal import Decimal
+from typing import Literal
+
+from pydantic import AnyHttpUrl, Field, SecretStr, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=(".env", ".env.production"),
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    environment: Literal["development", "test", "staging", "production", "quality_gate"] = "development"
+    database_url: str = "sqlite+aiosqlite:///./vibus.db"
+    public_base_url: AnyHttpUrl = "http://localhost:8000"
+    preview_base_url: AnyHttpUrl = "http://localhost:8000"
+    cors_origins: list[str] | str = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
+
+    browser_session_cookie_name: str = "vibeus_session"
+    preview_session_cookie_name: str = "vibeus_preview_session"
+
+    token_pepper: SecretStr = SecretStr("default_weak_pepper_for_dev_only_replace_in_prod")
+    field_encryption_key: SecretStr = SecretStr("default_weak_key_for_dev_only")
+    redis_url: str | None = None
+
+    enable_mcp_write: bool = True
+    enable_public_tunnels: bool = True
+    enable_stripe: bool = False
+    enable_yookassa: bool = False
+    enable_mock_billing: bool = False
+    enable_enhanced_diagnostics: bool = False
+    enable_demo_seed: bool = True
+
+    # Canonical commercial catalog. Backend charges and public pricing UI read
+    # the same values; do not duplicate plan amounts in React.
+    billing_period_days: int = Field(default=30, ge=1, le=366)
+    pricing_default_market: Literal["ru", "global"] = "ru"
+    enable_global_pricing: bool = False
+    price_rub_solo: Decimal = Field(default=Decimal("1490.00"), gt=0)
+    price_rub_studio: Decimal = Field(default=Decimal("4990.00"), gt=0)
+    price_usd_solo: Decimal = Field(default=Decimal("29.00"), gt=0)
+    price_usd_studio: Decimal = Field(default=Decimal("79.00"), gt=0)
+
+    billing_tax_mode: Literal["npd", "kkt_54fz"] = "npd"
+    stripe_secret_key: SecretStr = SecretStr("")
+    stripe_webhook_secret: SecretStr = SecretStr("")
+    yookassa_shop_id: SecretStr = SecretStr("")
+    yookassa_secret_key: SecretStr = SecretStr("")
+    # Configure these from your accountant/cash-register setup only if billing_tax_mode == "kkt_54fz".
+    # In NPD (самозанятый) mode, ККТ is not used and electronic receipts are registered via "Мой налог".
+    yookassa_vat_code: str = ""
+    yookassa_payment_subject: str = ""
+
+    @field_validator("cors_origins", mode="after")
+    @classmethod
+    def parse_origins(cls, value):
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return value
+
+    @model_validator(mode="after")
+    def validate_production(self):
+        if self.environment != "production":
+            return self
+
+        errors: list[str] = []
+        if self.database_url.startswith("sqlite"):
+            errors.append("SQLite is forbidden in production")
+        if "*" in self.cors_origins:
+            errors.append("Wildcard CORS is forbidden in production")
+        if len(self.token_pepper.get_secret_value()) < 32:
+            errors.append("TOKEN_PEPPER must be at least 32 random bytes")
+        if len(self.field_encryption_key.get_secret_value()) < 32:
+            errors.append("FIELD_ENCRYPTION_KEY must be configured")
+        if self.enable_mock_billing:
+            errors.append("Mock billing is forbidden in production")
+        if self.enable_demo_seed:
+            errors.append("Demo seeding is forbidden in production; provision demo data explicitly")
+        public_host = (self.public_base_url.host or "").lower().strip(".")
+        preview_host = (self.preview_base_url.host or "").lower().strip(".")
+        public_site_hint = ".".join(public_host.split(".")[-2:]) if public_host else ""
+        preview_site_hint = ".".join(preview_host.split(".")[-2:]) if preview_host else ""
+        if not public_host or not preview_host or public_host == preview_host:
+            errors.append("PREVIEW_BASE_URL must use a different host from PUBLIC_BASE_URL in production")
+        elif public_site_hint and public_site_hint == preview_site_hint:
+            errors.append("PREVIEW_BASE_URL must use a different registrable-domain boundary from PUBLIC_BASE_URL (for example vibeus-preview.net)")
+        if self.enable_stripe and not self.stripe_webhook_secret.get_secret_value():
+            errors.append("Stripe webhook secret is required")
+        if self.enable_yookassa and not (
+            self.yookassa_shop_id.get_secret_value()
+            and self.yookassa_secret_key.get_secret_value()
+        ):
+            errors.append("YooKassa credentials are required")
+        if self.enable_yookassa and self.billing_tax_mode == "kkt_54fz":
+            if not self.yookassa_vat_code:
+                errors.append("YOOKASSA_VAT_CODE must be configured from your 54-FZ cash-register setup")
+            if not self.yookassa_payment_subject:
+                errors.append("YOOKASSA_PAYMENT_SUBJECT must be configured from your 54-FZ fiscal setup")
+        # `redis_url` is reserved for the forthcoming distributed realtime/tunnel
+        # registry. Merely configuring Redis does not make process-local connection
+        # managers safe to scale horizontally; deployment is one-worker until that
+        # architecture lands.
+
+        if errors:
+            raise ValueError("Invalid production configuration: " + "; ".join(errors))
+        return self
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

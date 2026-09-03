@@ -1,0 +1,30 @@
+{
+  "name": "vibus",
+  "version": "0.1.0",
+  "description": "CLI bridge for VibeUs visual feedback, AI-ready tasks, MCP, verified criteria, and Live Preview",
+  "main": "index.js",
+  "bin": {
+    "vibus": "./index.js"
+  },
+  "keywords": [
+    "developer-tools",
+    "feedback",
+    "qa",
+    "mcp",
+    "ai-agents",
+    "vibe-coding",
+    "kanban"
+  ],
+  "author": "Vibus Team",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test test/*.test.js",
+    "lint": "node --check index.js && node --check mcp.js && node --check tunnel.js"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.7.0",
+    "picocolors": "^1.1.1",
+    "ws": "^8.18.0"
+  }
+}

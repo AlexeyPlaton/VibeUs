@@ -1,0 +1,58 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node.js
+node_modules/
+
+# Build outputs
+dist/
+dist-landing/
+dist-widget/
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# Database files
+*.db
+*.sqlite3
+
+# Vibus local runtime
+.vibus/
+.vibusrc.json
+
+# Archives (should not be in repo)
+*.tar.gz
+*.zip
+
+# Scratch / temp files
+scratch_*.json
+test_client_site.html
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+openspec-core/.venv/
+.venv/
+REVIEW_SNAPSHOT.txt
+*_review_snapshot.txt
+

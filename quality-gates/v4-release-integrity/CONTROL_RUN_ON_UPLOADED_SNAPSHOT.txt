@@ -1,0 +1,164 @@
+=== VibeUs v4 control run against uploaded 2026-09-02 snapshot ===
+UTC 2026-09-02T11:43:00Z
+
+--- executable billing subset (receipt CLI test skipped because sandbox lacks aiosqlite) ---
+FFF.F                                                                    [100%]
+=================================== FAILURES ===================================
+__ test_real_checkout_never_returns_confirmation_if_local_ledger_commit_fails __
+
+configured_yoo = <module 'yookassa_service' from '/mnt/data/vibus_snapshot_extract/openspec-core/yookassa_service.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f173009e520>
+
+    @pytest.mark.blocker
+    @pytest.mark.billing
+    @pytest.mark.asyncio
+    async def test_real_checkout_never_returns_confirmation_if_local_ledger_commit_fails(
+        configured_yoo, monkeypatch
+    ):
+        svc = configured_yoo
+        provider = {
+            "id": "yk-v4-real-ledger-fail",
+            "status": "pending",
+            "confirmation": {"confirmation_url": "https://yookassa.ru/checkout/v4-ledger-fail"},
+        }
+        monkeypatch.setattr(svc.httpx, "AsyncClient", lambda *a, **k: FakeHTTPClient(post_payload=provider))
+        db = CaptureDB(fail_commit=True)
+    
+>       with pytest.raises(HTTPException) as exc:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'fastapi.exceptions.HTTPException'>
+
+tests/test_01_yookassa_ledger_integrity_v4.py:119: Failed
+------------------------------ Captured log call -------------------------------
+WARNING  vibus.billing.yookassa:yookassa_service.py:199 Note on payment ledger record: simulated ledger commit failure
+________ test_mock_checkout_also_fails_closed_when_ledger_commit_fails _________
+
+service_modules = namespace(models=<module 'models' from '/mnt/data/vibus_snapshot_extract/openspec-core/models.py'>, yookassa_service=<module 'yookassa_service' from '/mnt/data/vibus_snapshot_extract/openspec-core/yookassa_service.py'>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f17300bb890>
+
+    @pytest.mark.blocker
+    @pytest.mark.billing
+    @pytest.mark.asyncio
+    async def test_mock_checkout_also_fails_closed_when_ledger_commit_fails(service_modules, monkeypatch):
+        """Mock mode is part of the release harness; it must not produce false-green checkouts without a ledger."""
+        svc = service_modules.yookassa_service
+        monkeypatch.setattr(svc, "YOOKASSA_SHOP_ID", "")
+        monkeypatch.setattr(svc, "YOOKASSA_SECRET_KEY", "")
+        monkeypatch.setattr(svc, "ALLOW_MOCK_BILLING", True)
+        monkeypatch.setattr(
+            svc,
+            "get_settings",
+            lambda: SimpleNamespace(
+                billing_tax_mode="npd",
+                billing_period_days=30,
+                environment="test",
+                enable_mock_billing=True,
+            ),
+        )
+        monkeypatch.setattr(
+            svc.pricing,
+            "public_catalog",
+            lambda: {"markets": {"ru": {"plans": {"solo": {"amount": "1490.00"}, "studio": {"amount": "4990.00"}}}}},
+        )
+        monkeypatch.setattr(svc.pricing, "amount_minor", lambda market, tier: 149000)
+        db = CaptureDB(fail_commit=True)
+    
+>       with pytest.raises(HTTPException):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'fastapi.exceptions.HTTPException'>
+
+tests/test_01_yookassa_ledger_integrity_v4.py:160: Failed
+------------------------------ Captured log call -------------------------------
+WARNING  vibus.billing.yookassa:yookassa_service.py:75 YOOKASSA_SHOP_ID / SECRET_KEY не заданы. Возвращен тестовый mock URL.
+WARNING  vibus.billing.yookassa:yookassa_service.py:94 Note on mock payment ledger record: simulated ledger commit failure
+_ test_forged_canceled_event_cannot_mutate_ledger_when_provider_status_is_not_canceled _
+
+configured_yoo = <module 'yookassa_service' from '/mnt/data/vibus_snapshot_extract/openspec-core/yookassa_service.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f1723eb05a0>
+
+    @pytest.mark.blocker
+    @pytest.mark.security
+    @pytest.mark.billing
+    @pytest.mark.asyncio
+    async def test_forged_canceled_event_cannot_mutate_ledger_when_provider_status_is_not_canceled(
+        configured_yoo, monkeypatch
+    ):
+        svc = configured_yoo
+        payment = SimpleNamespace(
+            provider_payment_id="yk-v4-cancel-auth",
+            status="pending",
+            amount_minor=149000,
+            currency="RUB",
+            tax_mode="npd",
+            fiscal_status="receipt_not_required",
+        )
+        db = WebhookDB(payment)
+        remote = {"id": payment.provider_payment_id, "status": "pending", "test": False}
+        monkeypatch.setattr(svc.httpx, "AsyncClient", lambda *a, **k: FakeHTTPClient(get_payload=remote))
+    
+        try:
+            result = await svc.process_yookassa_webhook(
+                {"event": "payment.canceled", "object": {"id": payment.provider_payment_id}}, db
+            )
+            assert result.get("status") in {"ignored", "ok"}
+        except HTTPException as exc:
+            assert exc.status_code in {400, 409}, "A verified provider-state mismatch may be rejected, but never applied."
+    
+>       assert payment.status == "pending", "Webhook event name alone must not cancel a payment."
+E       AssertionError: Webhook event name alone must not cancel a payment.
+E       assert 'canceled' == 'pending'
+E         
+E         - pending
+E         + canceled
+
+tests/test_01_yookassa_ledger_integrity_v4.py:199: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  vibus.billing.yookassa:yookassa_service.py:332 Платеж ЮKassa yk-v4-cancel-auth был отменен
+_____________ test_buyer_fiscal_identity_is_snapshotted_on_payment _____________
+
+configured_yoo = <module 'yookassa_service' from '/mnt/data/vibus_snapshot_extract/openspec-core/yookassa_service.py'>
+service_modules = namespace(models=<module 'models' from '/mnt/data/vibus_snapshot_extract/openspec-core/models.py'>, yookassa_service=<module 'yookassa_service' from '/mnt/data/vibus_snapshot_extract/openspec-core/yookassa_service.py'>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f1723e69310>
+
+    @pytest.mark.blocker
+    @pytest.mark.billing
+    @pytest.mark.asyncio
+    async def test_buyer_fiscal_identity_is_snapshotted_on_payment(configured_yoo, service_modules, monkeypatch):
+        svc = configured_yoo
+        Payment = service_modules.models.Payment
+        required_columns = {"buyer_email", "buyer_is_b2b", "buyer_inn", "buyer_name"}
+        actual_columns = {c.name for c in Payment.__table__.columns}
+>       assert required_columns.issubset(actual_columns), (
+            "Buyer/fiscal identity must be durable Payment data, not mutable Workspace data. "
+            f"Missing: {sorted(required_columns - actual_columns)}"
+        )
+E       AssertionError: Buyer/fiscal identity must be durable Payment data, not mutable Workspace data. Missing: ['buyer_email', 'buyer_inn', 'buyer_is_b2b', 'buyer_name']
+E       assert False
+E        +  where False = <built-in method issubset of set object at 0x7f1723ec0ac0>({'amount_minor', 'created_at', 'currency', 'entitlement_period_end', 'entitlement_period_start', 'fiscal_status', ...})
+E        +    where <built-in method issubset of set object at 0x7f1723ec0ac0> = {'buyer_email', 'buyer_inn', 'buyer_is_b2b', 'buyer_name'}.issubset
+
+tests/test_01_yookassa_ledger_integrity_v4.py:237: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_01_yookassa_ledger_integrity_v4.py::test_real_checkout_never_returns_confirmation_if_local_ledger_commit_fails - Failed: DID NOT RAISE <class 'fastapi.exceptions.HTTPException'>
+FAILED tests/test_01_yookassa_ledger_integrity_v4.py::test_mock_checkout_also_fails_closed_when_ledger_commit_fails - Failed: DID NOT RAISE <class 'fastapi.exceptions.HTTPException'>
+FAILED tests/test_01_yookassa_ledger_integrity_v4.py::test_forged_canceled_event_cannot_mutate_ledger_when_provider_status_is_not_canceled - AssertionError: Webhook event name alone must not cancel a payment.
+assert 'canceled' == 'pending'
+  
+  - pending
+  + canceled
+FAILED tests/test_01_yookassa_ledger_integrity_v4.py::test_buyer_fiscal_identity_is_snapshotted_on_payment - AssertionError: Buyer/fiscal identity must be durable Payment data, not mutable Workspace data. Missing: ['buyer_email', 'buyer_inn', 'buyer_is_b2b', 'buyer_name']
+assert False
+ +  where False = <built-in method issubset of set object at 0x7f1723ec0ac0>({'amount_minor', 'created_at', 'currency', 'entitlement_period_end', 'entitlement_period_start', 'fiscal_status', ...})
+ +    where <built-in method issubset of set object at 0x7f1723ec0ac0> = {'buyer_email', 'buyer_inn', 'buyer_is_b2b', 'buyer_name'}.issubset
+4 failed, 1 passed, 1 deselected in 0.42s
+pytest_exit=1 (non-zero expected on vulnerable snapshot)
+
+--- published migration immutability control ---
+.                                                                        [100%]
+1 passed in 0.03s
+
+--- review snapshot exact-marker control ---
+MISSING --- Файл: openspec-core/Dockerfile ---
+PRESENT --- Файл: openspec-core/dockerfile ---
+MISSING --- Файл: run_release_gate.py ---
+MISSING --- Файл: scripts/render_pricing.py ---
