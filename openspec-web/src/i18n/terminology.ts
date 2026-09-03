@@ -1,6 +1,12 @@
 export const terminologyEn = {
   v7: {
     create: {
+      plan: {
+        free_title: 'Free',
+      },
+      workspace: {
+        default_name: 'My VibeUs Workspace',
+      },
       labels: {
         api_token: 'API Token',
         one_time_secret: 'SECRET · one-time view',
@@ -12,6 +18,12 @@ export const terminologyEn = {
       },
     },
     dashboard: {
+      plans: {
+        free: 'Free',
+        solo: 'Solo',
+        studio: 'Studio',
+        business: 'Business',
+      },
       labels: {
         brand_space: 'workspace',
         workspace: 'Workspace',
@@ -94,6 +106,12 @@ export const terminologyRu = {
   },
   v7: {
     create: {
+      plan: {
+        free_title: 'Бесплатно',
+      },
+      workspace: {
+        default_name: 'Моё рабочее пространство VibeUs',
+      },
       form: {
         address: 'Адрес проекта',
         address_help: 'Короткий латинский адрес, который используется в ссылках и командах.',
@@ -109,6 +127,12 @@ export const terminologyRu = {
       },
     },
     dashboard: {
+      plans: {
+        free: 'Бесплатно',
+        solo: 'Solo',
+        studio: 'Studio',
+        business: 'Для компаний',
+      },
       labels: {
         brand_space: 'рабочее пространство',
         workspace: 'Рабочее пространство',
