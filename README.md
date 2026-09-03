@@ -164,7 +164,7 @@ VibeUs can be run on your own infrastructure.
 Fastest local stack:
 
 ```bash
-git clone https://github.com/AlexeyPlaton/Vibus.git vibeus
+git clone https://github.com/AlexeyPlaton/VibeUs.git vibeus
 cd vibeus
 cp .env.example .env
 docker compose up -d --build
