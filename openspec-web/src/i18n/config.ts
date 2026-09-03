@@ -7,6 +7,7 @@ import { v8En, v8Ru } from './v8';
 import { editorialEn, editorialRu } from './editorial';
 import { terminologyEn, terminologyRu } from './terminology';
 import { engineeringTermsEn, engineeringTermsRu } from './engineeringTerms';
+import { enterpriseTermsEn, enterpriseTermsRu } from './enterpriseTerms';
 import { polishRussianCopy } from './russianCopy';
 
 export const SUPPORTED_UI_LOCALES = ['en', 'ru'] as const;
@@ -39,32 +40,38 @@ function mergeDeep<T extends Record<string, any>>(base: T, override: Record<stri
 const enTranslation = mergeDeep(
   mergeDeep(
     mergeDeep(
-      {
-        ...en,
-        public_feedback: v8En.public_feedback,
-        feedback: { ...((en as any).feedback || {}), ...v8En.feedback },
-      },
-      editorialEn,
+      mergeDeep(
+        {
+          ...en,
+          public_feedback: v8En.public_feedback,
+          feedback: { ...((en as any).feedback || {}), ...v8En.feedback },
+        },
+        editorialEn,
+      ),
+      terminologyEn,
     ),
-    terminologyEn,
+    engineeringTermsEn,
   ),
-  engineeringTermsEn,
+  enterpriseTermsEn,
 );
 
 const ruTranslation = polishRussianCopy(
   mergeDeep(
     mergeDeep(
       mergeDeep(
-        {
-          ...ru,
-          public_feedback: v8Ru.public_feedback,
-          feedback: { ...((ru as any).feedback || {}), ...v8Ru.feedback },
-        },
-        editorialRu,
+        mergeDeep(
+          {
+            ...ru,
+            public_feedback: v8Ru.public_feedback,
+            feedback: { ...((ru as any).feedback || {}), ...v8Ru.feedback },
+          },
+          editorialRu,
+        ),
+        terminologyRu,
       ),
-      terminologyRu,
+      engineeringTermsRu,
     ),
-    engineeringTermsRu,
+    enterpriseTermsRu,
   ) as any,
 ) as typeof ru;
 
