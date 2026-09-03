@@ -65,6 +65,12 @@ def _install_done_guard() -> None:
         return value
 
 
+def _canonical_commercial_tier(value: str) -> str:
+    """Normalize historical paid tier names without changing stored contracts."""
+    normalized = str(value or "free").strip().lower()
+    return {"pro": "solo", "team": "studio"}.get(normalized, normalized)
+
+
 def _install_project_limit_guard() -> None:
     original = crud.create_project
 
@@ -90,7 +96,7 @@ def _install_project_limit_guard() -> None:
             )
         )
         project_count = int(count_result.scalar() or 0)
-        tier = str(entitlements.effective_tier(locked_workspace) or "free").lower()
+        tier = _canonical_commercial_tier(entitlements.effective_tier(locked_workspace))
         limit = {"free": 1, "solo": 10, "studio": 50, "business": 1_000_000}.get(tier, 1)
         if project_count >= limit:
             raise HTTPException(
