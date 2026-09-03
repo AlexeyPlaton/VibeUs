@@ -1,7 +1,18 @@
-import React from 'react';
-import { X, KanbanSquare } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, KanbanSquare, Moon, Sun } from 'lucide-react';
 import { VibusWidgetUI } from './VibusWidgetUI';
 import { tr } from '../i18n/config';
+
+type BoardTheme = 'light' | 'dark';
+
+const BOARD_THEME_STORAGE_KEY = 'vibus_board_theme';
+
+function resolveInitialTheme(): BoardTheme {
+  if (typeof window === 'undefined') return 'dark';
+  const saved = window.localStorage.getItem(BOARD_THEME_STORAGE_KEY);
+  if (saved === 'light' || saved === 'dark') return saved;
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 
 interface ProjectBoardModalProps {
   project: {
@@ -21,44 +32,71 @@ export const ProjectBoardModal: React.FC<ProjectBoardModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const [appearance, setAppearance] = useState<BoardTheme>(resolveInitialTheme);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(BOARD_THEME_STORAGE_KEY, appearance);
+    }
+  }, [appearance]);
+
   if (!isOpen) return null;
 
+  const toggleAppearance = () => setAppearance((current) => current === 'dark' ? 'light' : 'dark');
+  const themeButtonLabel = appearance === 'dark'
+    ? tr('v7.project_board.switch_to_light')
+    : tr('v7.project_board.switch_to_dark');
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="flex h-[95vh] w-full max-w-7xl flex-col rounded-3xl border border-white/10 bg-slate-950 shadow-2xl overflow-hidden">
-        <header className="flex items-center justify-between border-b border-white/10 px-6 py-3 bg-slate-900/80">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              <KanbanSquare className="h-5 w-5" />
+    <div className={`enterprise-board-host vibe-enterprise-shell vibe-theme-${appearance} fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-0 sm:p-3 backdrop-blur-[2px] animate-in fade-in duration-150`}>
+      <div className="enterprise-board-modal flex flex-col">
+        <header className="enterprise-board-modal-header flex items-center justify-between px-4 sm:px-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--vb-border)] bg-[var(--vb-accent-soft)] text-[var(--vb-accent)]">
+              <KanbanSquare className="h-4 w-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-white">{project.name}</h3>
-                <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-mono text-slate-400">
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-2">
+                <h3 className="truncate text-sm font-semibold text-[var(--vb-text)]">{project.name}</h3>
+                <span className="enterprise-project-chip hidden max-w-[220px] truncate rounded-md px-2 py-0.5 text-[10px] font-mono sm:inline">
                   {project.slug}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="mt-0.5 text-[11px] text-[var(--vb-muted)]">
                 {tr('v7.project_board.subtitle')}
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-white/10 p-2 text-slate-400 hover:bg-white/5 hover:text-white transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleAppearance}
+              className="enterprise-icon-button"
+              title={themeButtonLabel}
+              aria-label={themeButtonLabel}
+            >
+              {appearance === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="enterprise-icon-button"
+              title={tr('v7.project_board.close')}
+              aria-label={tr('v7.project_board.close')}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </header>
 
-        <div className="flex-1 relative overflow-hidden bg-slate-950">
+        <div className="enterprise-board-stage flex-1 overflow-hidden">
           <VibusWidgetUI
             projectId={project.slug}
             publicKey={project.public_widget_key || ''}
             serverUrl={serverUrl}
             mode="studio"
-            theme="dark"
+            theme={appearance}
             accentColor="indigo"
           />
         </div>
