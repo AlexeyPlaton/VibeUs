@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { tr } from '../i18n/config';
+import i18n, { normalizeUiLocale, tr } from '../i18n/config';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import {
   Activity,
@@ -80,6 +80,8 @@ export function CreateProjectPage() {
   const configuredLegalVersion = import.meta.env.VITE_LEGAL_VERSION as string | undefined;
   const legalVersion = configuredLegalVersion || 'dev-draft';
   const legalVersionReady = !import.meta.env.PROD || Boolean(configuredLegalVersion);
+  const legalLocale = normalizeUiLocale(i18n.language) || 'en';
+  const requiresPersonalDataConsent = legalLocale === 'ru';
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const planParam = params.get('plan');
   const initialPlan: Plan = planParam === 'solo' || planParam === 'studio' ? planParam : 'free';
@@ -96,7 +98,9 @@ export function CreateProjectPage() {
   const [authPasswordInput, setAuthPasswordInput] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [legalAccepted, setLegalAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
+  const [personalDataConsented, setPersonalDataConsented] = useState(false);
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -402,7 +406,17 @@ export function CreateProjectPage() {
         if (!legalVersionReady) throw new Error(tr('v7.create.errors.legal_version'));
         const regRes = await fetch(`${getApiUrl()}/api/auth/register`, {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: authEmailInput.trim(), password: authPasswordInput, accept_terms: legalAccepted, terms_version: legalVersion, privacy_version: legalVersion }),
+          body: JSON.stringify({
+            email: authEmailInput.trim(),
+            password: authPasswordInput,
+            legal_locale: legalLocale,
+            accept_terms: termsAccepted,
+            acknowledge_privacy: privacyAcknowledged,
+            consent_personal_data: requiresPersonalDataConsent ? personalDataConsented : false,
+            terms_version: legalVersion,
+            privacy_version: legalVersion,
+            personal_data_consent_version: requiresPersonalDataConsent ? legalVersion : null,
+          }),
         });
         if (!regRes.ok) throw new Error(extractErrorMessage(await regRes.json().catch(() => ({})), tr('v7.create.errors.registration')));
       }
@@ -446,6 +460,7 @@ export function CreateProjectPage() {
   const cliCommand = result ? `npx vibus listen --project ${result.slug} --token ${result.token}` : '';
   const priceFor = (plan: Plan) => plan === 'free' ? '0' : tr('v7.common.price_period', { price: displayPrice(pricing, market, plan), days: pricing?.period_days || 30 });
   const globalVisible = Boolean(pricing?.markets.global.visible);
+  const registrationLegalReady = termsAccepted && privacyAcknowledged && (!requiresPersonalDataConsent || personalDataConsented);
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900 sm:px-6">
@@ -474,8 +489,12 @@ export function CreateProjectPage() {
               <form onSubmit={handleAuthSubmit} className="space-y-4">
                 <input type="email" required value={authEmailInput} onChange={(e) => setAuthEmailInput(e.target.value)} placeholder="developer@example.com" className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-indigo-500" />
                 <input type="password" required minLength={authMode === 'register' ? 12 : 1} value={authPasswordInput} onChange={(e) => setAuthPasswordInput(e.target.value)} placeholder={authMode === 'register' ? tr('v7.create.auth.password_new') : tr('v7.create.auth.password')} className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-indigo-500" />
-                {authMode === 'register' && <label className="flex gap-3 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600"><input type="checkbox" required checked={legalAccepted} onChange={(e) => setLegalAccepted(e.target.checked)} className="mt-1" /><span>{tr('v7.create.auth.accept_prefix')}<Link to="/legal/offer" target="_blank" className="text-indigo-700 underline">{tr('v7.create.auth.offer')}</Link>{tr('v7.create.auth.privacy_prefix')}<Link to="/legal/privacy" target="_blank" className="text-indigo-700 underline">{tr('v7.create.auth.privacy')}</Link>.</span></label>}
-                <button disabled={authLoading || (authMode === 'register' && (!legalAccepted || !legalVersionReady))} className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white disabled:opacity-50">{authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : authMode === 'login' ? tr('v7.create.auth.login_continue') : tr('v7.create.auth.register_action')}</button>
+                {authMode === 'register' && <div className="space-y-2">
+                  <label className="flex gap-3 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600"><input type="checkbox" required checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="mt-1" /><span>{tr('v7.create.auth.accept_prefix')} <Link to="/legal/offer" target="_blank" className="text-indigo-700 underline">{tr('v7.create.auth.offer')}</Link>.</span></label>
+                  <label className="flex gap-3 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600"><input type="checkbox" required checked={privacyAcknowledged} onChange={(e) => setPrivacyAcknowledged(e.target.checked)} className="mt-1" /><span>{tr('v7.create.auth.privacy_prefix')} <Link to="/legal/privacy" target="_blank" className="text-indigo-700 underline">{tr('v7.create.auth.privacy')}</Link>.</span></label>
+                  {requiresPersonalDataConsent && <label className="flex gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs leading-relaxed text-slate-700"><input type="checkbox" required checked={personalDataConsented} onChange={(e) => setPersonalDataConsented(e.target.checked)} className="mt-1" /><span><Link to="/legal/consent" target="_blank" className="font-medium text-indigo-700 underline">{tr('v7.legal.docs.consent')}</Link>.</span></label>}
+                </div>}
+                <button disabled={authLoading || (authMode === 'register' && (!registrationLegalReady || !legalVersionReady))} className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white disabled:opacity-50">{authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : authMode === 'login' ? tr('v7.create.auth.login_continue') : tr('v7.create.auth.register_action')}</button>
               </form>
             </div>
           ) : result ? (
