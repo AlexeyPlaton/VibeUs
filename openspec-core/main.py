@@ -12,6 +12,8 @@ scanners are upgraded to concatenate ``main.py`` + ``main_legacy.py``.
 """
 from __future__ import annotations
 
+import sys
+import types
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlencode
@@ -39,10 +41,34 @@ _EFFECTIVE_LEGACY_API_CONTRACTS = (
     "ingest_key_configured"
 )
 
+
+class _CompatMainModule(types.ModuleType):
+    """Mirror historical test/runtime monkeypatches into ``main_legacy``.
+
+    Older tests replace ``main.async_session``/``main.engine``/``main.limiter``.
+    The actual legacy websocket handlers still resolve those globals from
+    ``main_legacy``, so assignments need to be forwarded transparently.
+    """
+
+    _FORWARDED = {"async_session", "engine", "limiter"}
+
+    def __setattr__(self, name, value):
+        if name in self._FORWARDED and hasattr(legacy, name):
+            setattr(legacy, name, value)
+        super().__setattr__(name, value)
+
+
+sys.modules[__name__].__class__ = _CompatMainModule
+
 install_runtime_invariants()
 app = legacy.app
 manager = legacy.manager
 app.include_router(billing_router.router)
+
+# Seed proxy-visible values so old imports keep working as before.
+async_session = legacy.async_session
+engine = legacy.engine
+limiter = legacy.limiter
 
 
 def _drop_api_route(path: str, method: str) -> None:
