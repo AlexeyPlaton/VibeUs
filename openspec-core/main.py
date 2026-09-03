@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import auth
+import billing_router
 import main_legacy as legacy
 import models
 import schemas
@@ -24,6 +25,7 @@ from release_invariants import human_review_transition, install_runtime_invarian
 install_runtime_invariants()
 app = legacy.app
 manager = legacy.manager
+app.include_router(billing_router.router)
 
 
 def _drop_api_route(path: str, method: str) -> None:
