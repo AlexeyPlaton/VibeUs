@@ -5,11 +5,11 @@ Thanks for helping improve VibeUs.
 ## Dual-Repository Development Model & Pull Requests
 
 VibeUs uses a dual-repository architecture to deliver clean, reproducible open-source releases without publishing internal development artifacts, forensic test baselines, or private deployment credentials:
-- **Public Repository (`AlexeyPlaton/Vibus`)**: The open-source face for community issues, discussions, and external Pull Requests.
+- **Public Repository (`AlexeyPlaton/VibeUs`)**: The open-source face for community issues, discussions, and external Pull Requests.
 - **Canonical Repository**: Private development source of truth, forensic verification history, and continuous production deployment orchestration.
 
 ### Pull Request Lifecycle
-1. **Submit**: Contributors fork and open Pull Requests against `main` on the public `AlexeyPlaton/Vibus` repository.
+1. **Submit**: Contributors fork and open Pull Requests against `main` on the public `AlexeyPlaton/VibeUs` repository.
 2. **Review**: Maintainers review the proposed code and test additions.
 3. **Import & Verification**: Approved PR changes are imported into the canonical repository, where the full 16-section release gate (`python run_release_gate.py`) executes.
 4. **Mirror Synchronization**: Automated mirror tooling (`build_public_mirror.py`) regenerates and synchronizes the public repository with full contributor git attribution preserved.
