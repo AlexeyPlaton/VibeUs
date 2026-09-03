@@ -97,6 +97,8 @@ export function RuntimeErrorsModal({
   const [triggeringTest, setTriggeringTest] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
 
+  const statusLabel = (status: ErrorGroup['status']) => tr(`v7.runtime.item_status.${status}`);
+
   const fetchErrors = async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -225,7 +227,6 @@ export function RuntimeErrorsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="flex h-[92vh] w-full max-w-6xl flex-col rounded-3xl border border-white/10 bg-slate-900 shadow-2xl overflow-hidden">
-        {/* Header */}
         <header className="flex flex-wrap items-center justify-between border-b border-white/10 px-6 py-4 bg-slate-950/70">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
@@ -285,7 +286,6 @@ export function RuntimeErrorsModal({
           </div>
         </header>
 
-        {/* Warning Banner if tracking disabled */}
         {!project.runtime_error_tracking_enabled && (
           <div className="flex items-center justify-between border-b border-amber-500/20 bg-amber-500/10 px-6 py-2.5 text-xs text-amber-200">
             <div className="flex items-center gap-2">
@@ -301,7 +301,6 @@ export function RuntimeErrorsModal({
           </div>
         )}
 
-        {/* Navigation Tabs & Search */}
         <div className="flex flex-wrap items-center justify-between border-b border-white/10 px-6 py-3 bg-slate-900/50">
           <div className="flex flex-wrap gap-1">
             <button
@@ -368,7 +367,6 @@ export function RuntimeErrorsModal({
           )}
         </div>
 
-        {/* Content Body */}
         {errorMsg && (
           <div className="mx-6 mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">
             {errorMsg}
@@ -377,7 +375,6 @@ export function RuntimeErrorsModal({
 
         <div className="flex flex-1 overflow-hidden">
           {activeTab === 'sdk' ? (
-            /* SDK Integration Guide */
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-5">
                 <div className="flex items-center gap-2 text-indigo-300 font-bold text-sm">
@@ -468,9 +465,7 @@ app.add_middleware(
               </div>
             </div>
           ) : (
-            /* Error Groups List + Detail Panel */
             <div className="flex flex-1 overflow-hidden">
-              {/* Left Column: Error Groups List */}
               <div
                 className={`overflow-y-auto border-r border-white/10 p-4 space-y-2.5 transition-all ${
                   selectedError ? 'w-full md:w-5/12 lg:w-4/12' : 'w-full'
@@ -522,11 +517,7 @@ app.add_middleware(
                                   : 'bg-slate-700 text-slate-300'
                               }`}
                             >
-                              {err.status === 'open'
-                                ? 'Open'
-                                : err.status === 'resolved'
-                                ? 'Resolved'
-                                : 'Ignored'}
+                              {statusLabel(err.status)}
                             </span>
                             <span className="rounded bg-black/40 px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
                               {err.service}
@@ -561,7 +552,7 @@ app.add_middleware(
                         <div className="mt-3 flex items-center justify-between pt-2 border-t border-white/5 text-[11px] text-slate-500">
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {new Date(err.last_seen_at).toLocaleTimeString('ru-RU', {
+                            {new Date(err.last_seen_at).toLocaleTimeString(undefined, {
                               hour: '2-digit',
                               minute: '2-digit',
                               day: '2-digit',
@@ -581,7 +572,6 @@ app.add_middleware(
                 )}
               </div>
 
-              {/* Right Column: Error Details Inspector */}
               {selectedError && (
                 <div className="flex flex-1 flex-col overflow-y-auto p-6 bg-slate-950/40">
                   <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-5">
@@ -599,7 +589,7 @@ app.add_middleware(
                               : 'bg-slate-700 text-slate-300'
                           }`}
                         >
-                          {selectedError.status.toUpperCase()}
+                          {statusLabel(selectedError.status)}
                         </span>
                       </div>
                       <p className="mt-1 text-xs text-slate-400">
@@ -635,7 +625,6 @@ app.add_middleware(
                     </div>
                   </div>
 
-                  {/* Summary & Message */}
                   <div className="mt-5 space-y-4">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
                       <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{tr('v7.runtime.detail.message')}</span>
@@ -644,7 +633,6 @@ app.add_middleware(
                       </p>
                     </div>
 
-                    {/* Linked Ticket Card */}
                     {selectedError.ticket_key && (
                       <div className="flex items-center justify-between rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-4">
                         <div className="flex items-center gap-3">
@@ -657,11 +645,11 @@ app.add_middleware(
                                 {selectedError.ticket_key}
                               </span>
                               <span className="rounded bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold text-indigo-300 uppercase">
-                                {selectedError.ticket_status || 'Auto Ticket'}
+                                {selectedError.ticket_status || tr('v7.runtime.detail.auto_task')}
                               </span>
                             </div>
                             <p className="text-xs text-indigo-200/80 truncate max-w-md mt-0.5">
-                              {selectedError.ticket_title || `[CRASH] ${selectedError.exception_type}`}
+                              {selectedError.ticket_title || `${tr('v7.runtime.detail.crash_prefix')} ${selectedError.exception_type}`}
                             </p>
                           </div>
                         </div>
@@ -676,7 +664,6 @@ app.add_middleware(
                       </div>
                     )}
 
-                    {/* Diagnostics Metadata */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div className="rounded-xl bg-black/30 p-3">
                         <span className="text-[10px] text-slate-500 block">{tr('v7.runtime.detail.occurrences')}</span>
@@ -699,15 +686,14 @@ app.add_middleware(
                       <div className="rounded-xl bg-black/30 p-3">
                         <span className="text-[10px] text-slate-500 block">{tr('v7.runtime.detail.release')}</span>
                         <b className="text-sm text-slate-300 mt-0.5 block truncate">
-                          {selectedError.latest_occurrence?.release || 'current'}
+                          {selectedError.latest_occurrence?.release || tr('v7.runtime.detail.current_release')}
                         </b>
                       </div>
                     </div>
 
-                    {/* Request ID */}
                     {selectedError.latest_occurrence?.request_id && (
                       <div className="flex items-center justify-between rounded-xl bg-black/30 px-3 py-2 text-xs">
-                        <span className="text-slate-400">Request ID:</span>
+                        <span className="text-slate-400">{tr('v7.runtime.detail.request_id')}:</span>
                         <div className="flex items-center gap-2">
                           <code className="font-mono text-indigo-300 text-[11px]">
                             {selectedError.latest_occurrence.request_id}
@@ -728,7 +714,6 @@ app.add_middleware(
                       </div>
                     )}
 
-                    {/* Stack Trace */}
                     <div>
                       <div className="mb-2 flex items-center justify-between">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
