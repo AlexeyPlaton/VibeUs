@@ -1,0 +1,49 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.dirname(fileURLToPath(import.meta.url));
+const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
+
+test('enterprise board defines shared light and dark design tokens', () => {
+  const css = read('src/enterprise-board.css');
+  assert.match(css, /\.vibe-enterprise-shell\.vibe-theme-dark/);
+  assert.match(css, /\.vibe-enterprise-shell\.vibe-theme-light/);
+  for (const token of ['--vb-canvas', '--vb-surface', '--vb-border', '--vb-text', '--vb-muted', '--vb-accent']) {
+    assert.match(css, new RegExp(token));
+  }
+  assert.match(css, /backdrop-filter:\s*none\s*!important/);
+  assert.match(css, /\.spatial-card:hover[\s\S]*transform:\s*none\s*!important/);
+  assert.match(css, /focus-visible/);
+  assert.match(css, /prefers-reduced-motion/);
+});
+
+test('authenticated project board is a full workspace with persistent theme switch', () => {
+  const modal = read('src/components/ProjectBoardModal.tsx');
+  assert.match(modal, /vibus_board_theme/);
+  assert.match(modal, /prefers-color-scheme:\s*dark/);
+  assert.match(modal, /vibe-enterprise-shell/);
+  assert.match(modal, /vibe-theme-\$\{appearance\}/);
+  assert.match(modal, /theme=\{appearance\}/);
+  assert.match(modal, /switch_to_light/);
+  assert.match(modal, /switch_to_dark/);
+});
+
+test('standalone widget supports auto light-dark theming without hard-coded dark root', () => {
+  const widget = read('src/widget.tsx');
+  assert.match(widget, /resolveTheme/);
+  assert.match(widget, /vibe-theme-\$\{theme\}/);
+  assert.match(widget, /prefers-color-scheme:\s*dark/);
+  assert.match(widget, /data-vibus-root/);
+  assert.match(widget, /data-vibus-style/);
+  assert.doesNotMatch(widget, /vibus-widget-root dark['"]/);
+});
+
+test('enterprise board stylesheet is loaded in app and widget builds', () => {
+  const main = read('src/main.tsx');
+  const widget = read('src/widget.tsx');
+  assert.match(main, /enterprise-board\.css/);
+  assert.match(widget, /enterprise-board\.css/);
+});
