@@ -1,0 +1,457 @@
+/*
+ * VibeUs enterprise board design system.
+ *
+ * The board intentionally avoids glassmorphism-heavy presentation. Visual
+ * hierarchy comes from neutral surfaces, spacing, borders, typography and
+ * semantic status accents. Light and dark modes share the same tokens and
+ * component geometry so switching theme never changes layout.
+ */
+
+.vibe-enterprise-shell,
+.vibe-enterprise-shell.vibe-theme-dark {
+  --vb-canvas: #0f1117;
+  --vb-canvas-subtle: #12151d;
+  --vb-surface: #171b24;
+  --vb-surface-raised: #1c212c;
+  --vb-surface-hover: #222836;
+  --vb-border: rgba(255, 255, 255, 0.085);
+  --vb-border-strong: rgba(255, 255, 255, 0.145);
+  --vb-text: #f4f6f8;
+  --vb-text-secondary: #c5cbd5;
+  --vb-muted: #8d96a5;
+  --vb-faint: #626c7b;
+  --vb-accent: #6366f1;
+  --vb-accent-hover: #5558e8;
+  --vb-accent-soft: rgba(99, 102, 241, 0.13);
+  --vb-success: #3fb98b;
+  --vb-warning: #d8a449;
+  --vb-danger: #e46b72;
+  --vb-info: #5da5dc;
+  --vb-shadow: 0 18px 48px rgba(0, 0, 0, 0.28), 0 2px 10px rgba(0, 0, 0, 0.18);
+  --vb-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --vb-card-shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.18);
+  color-scheme: dark;
+  color: var(--vb-text);
+}
+
+.vibe-enterprise-shell.vibe-theme-light {
+  --vb-canvas: #f7f8fa;
+  --vb-canvas-subtle: #f2f4f7;
+  --vb-surface: #ffffff;
+  --vb-surface-raised: #ffffff;
+  --vb-surface-hover: #f7f8fb;
+  --vb-border: #e4e7ec;
+  --vb-border-strong: #d0d5dd;
+  --vb-text: #20242c;
+  --vb-text-secondary: #475467;
+  --vb-muted: #667085;
+  --vb-faint: #98a2b3;
+  --vb-accent: #5759d9;
+  --vb-accent-hover: #484ac5;
+  --vb-accent-soft: rgba(87, 89, 217, 0.08);
+  --vb-success: #16815c;
+  --vb-warning: #9c6a18;
+  --vb-danger: #c74652;
+  --vb-info: #2878b5;
+  --vb-shadow: 0 22px 64px rgba(16, 24, 40, 0.14), 0 2px 10px rgba(16, 24, 40, 0.06);
+  --vb-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --vb-card-shadow-hover: 0 4px 12px rgba(16, 24, 40, 0.08);
+  color-scheme: light;
+  color: var(--vb-text);
+}
+
+/* Full workspace host used by the authenticated project board. */
+.enterprise-board-host {
+  color: var(--vb-text);
+}
+
+.enterprise-board-modal {
+  height: min(94vh, 940px);
+  width: min(1500px, calc(100vw - 28px));
+  overflow: hidden;
+  border: 1px solid var(--vb-border);
+  border-radius: 18px;
+  background: var(--vb-canvas);
+  box-shadow: var(--vb-shadow);
+}
+
+.enterprise-board-modal-header {
+  min-height: 54px;
+  border-bottom: 1px solid var(--vb-border);
+  background: var(--vb-surface);
+  color: var(--vb-text);
+}
+
+.enterprise-board-stage {
+  position: relative;
+  min-height: 0;
+  background: var(--vb-canvas-subtle);
+}
+
+.enterprise-project-chip {
+  border: 1px solid var(--vb-border);
+  background: var(--vb-canvas-subtle);
+  color: var(--vb-muted);
+}
+
+.enterprise-icon-button {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--vb-border);
+  border-radius: 9px;
+  background: var(--vb-surface);
+  color: var(--vb-muted);
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.enterprise-icon-button:hover {
+  border-color: var(--vb-border-strong);
+  background: var(--vb-surface-hover);
+  color: var(--vb-text);
+}
+
+.enterprise-icon-button:focus-visible,
+.vibe-enterprise-shell button:focus-visible,
+.vibe-enterprise-shell a:focus-visible,
+.vibe-enterprise-shell select:focus-visible,
+.vibe-enterprise-shell input:focus-visible,
+.vibe-enterprise-shell textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--vb-accent) 72%, white 28%);
+  outline-offset: 2px;
+}
+
+/* In the authenticated board modal, the widget becomes the workspace itself. */
+.enterprise-board-stage > div[class*="fixed bottom-6 right-6"] {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.enterprise-board-stage .spatial-kanban {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.enterprise-board-stage .close-kanban,
+.enterprise-board-stage .resonance-btn,
+.enterprise-board-stage .resonance-btn + a {
+  display: none !important;
+}
+
+/* Main board shell. */
+.vibe-enterprise-shell .spatial-kanban {
+  padding: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--vb-border);
+  border-radius: 18px;
+  background: var(--vb-canvas) !important;
+  color: var(--vb-text) !important;
+  box-shadow: var(--vb-shadow);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+/* The first direct child is WidgetHeader. */
+.vibe-enterprise-shell #vibeKanban > div:first-child {
+  min-height: 62px;
+  margin: 0 !important;
+  padding: 11px 16px !important;
+  border-color: var(--vb-border) !important;
+  background: var(--vb-surface) !important;
+}
+
+.vibe-enterprise-shell #vibeKanban > div:first-child > div:first-child > div:first-child {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 10px !important;
+  border-color: var(--vb-border) !important;
+  background: var(--vb-accent-soft) !important;
+  box-shadow: none !important;
+}
+
+.vibe-enterprise-shell #vibeKanban > div:first-child h2 {
+  color: var(--vb-text) !important;
+  font-size: 0.94rem !important;
+  font-weight: 680 !important;
+  letter-spacing: -0.015em !important;
+}
+
+.vibe-enterprise-shell #vibeKanban > div:first-child p {
+  color: var(--vb-muted) !important;
+}
+
+/* Segmented navigation and header controls: flat, quiet and compact. */
+.vibe-enterprise-shell #vibeKanban > div:first-child [class*="bg-slate-900/60"] {
+  border-color: var(--vb-border) !important;
+  border-radius: 10px !important;
+  background: var(--vb-canvas-subtle) !important;
+  box-shadow: none !important;
+}
+
+.vibe-enterprise-shell #vibeKanban > div:first-child button {
+  min-height: 32px;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.vibe-enterprise-shell #vibeKanban > div:first-child button[class*="bg-indigo-600"] {
+  background: var(--vb-surface) !important;
+  color: var(--vb-text) !important;
+  box-shadow: inset 0 0 0 1px var(--vb-border-strong) !important;
+}
+
+/* Board body (BoardView has this characteristic class sequence). */
+.vibe-enterprise-shell #vibeKanban > div[class*="flex-1 flex flex-col min-h-0"][class*="overflow-hidden"] {
+  padding: 14px 16px 16px;
+  background: var(--vb-canvas-subtle) !important;
+}
+
+/* Board and filter bars. */
+.vibe-enterprise-shell #vibeKanban [class*="bg-slate-900/80"],
+.vibe-enterprise-shell #vibeKanban [class*="bg-slate-900 px-3"] {
+  border-color: var(--vb-border) !important;
+  background: var(--vb-surface) !important;
+  box-shadow: none !important;
+}
+
+.vibe-enterprise-shell #vibeKanban select,
+.vibe-enterprise-shell #vibeKanban option {
+  border-color: var(--vb-border) !important;
+  background-color: var(--vb-surface) !important;
+  color: var(--vb-text-secondary) !important;
+}
+
+/* Kanban columns. */
+.vibe-enterprise-shell #vibeKanban div[class*="w-80 flex flex-col h-full"] {
+  width: 294px !important;
+  min-width: 294px;
+  padding: 11px;
+  border: 1px solid var(--vb-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--vb-surface) 58%, var(--vb-canvas-subtle) 42%);
+}
+
+.vibe-enterprise-shell #vibeKanban div[class*="w-80 flex flex-col h-full"] > div:first-child {
+  margin-bottom: 10px !important;
+  padding: 0 2px 9px !important;
+  border-color: var(--vb-border) !important;
+}
+
+.vibe-enterprise-shell #vibeKanban div[class*="w-80 flex flex-col h-full"] > div:first-child h3 {
+  color: var(--vb-text-secondary) !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em;
+}
+
+.vibe-enterprise-shell #vibeKanban div[class*="w-80 flex flex-col h-full"] > div:first-child span[class*="rounded-full"] {
+  box-shadow: none !important;
+}
+
+/* Ticket cards. */
+.vibe-enterprise-shell #vibeKanban .spatial-card {
+  overflow: visible;
+  padding: 12px !important;
+  border: 1px solid var(--vb-border) !important;
+  border-radius: 11px !important;
+  background: var(--vb-surface) !important;
+  box-shadow: var(--vb-card-shadow) !important;
+  transform: none !important;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease !important;
+}
+
+.vibe-enterprise-shell #vibeKanban .spatial-card:hover {
+  border-color: var(--vb-border-strong) !important;
+  background: var(--vb-surface-raised) !important;
+  box-shadow: var(--vb-card-shadow-hover) !important;
+  transform: none !important;
+}
+
+.vibe-enterprise-shell #vibeKanban .spatial-card::before {
+  display: none !important;
+}
+
+.vibe-enterprise-shell #vibeKanban .spatial-card[class*="border-rose"] {
+  box-shadow: inset 3px 0 0 var(--vb-danger), var(--vb-card-shadow) !important;
+}
+
+.vibe-enterprise-shell #vibeKanban .spatial-card[class*="border-indigo"] {
+  box-shadow: inset 3px 0 0 var(--vb-accent), var(--vb-card-shadow) !important;
+}
+
+.vibe-enterprise-shell #vibeKanban .spatial-card[class*="border-amber"],
+.vibe-enterprise-shell #vibeKanban .spatial-card[class*="border-orange"] {
+  box-shadow: inset 3px 0 0 var(--vb-warning), var(--vb-card-shadow) !important;
+}
+
+.vibe-enterprise-shell #vibeKanban .spatial-card p[class*="text-sm"] {
+  margin-bottom: 10px !important;
+  color: var(--vb-text) !important;
+  font-size: 0.82rem !important;
+  font-weight: 620 !important;
+  line-height: 1.45 !important;
+}
+
+.vibe-enterprise-shell #vibeKanban .spatial-card .tag-spatial {
+  min-height: 20px;
+  padding: 2px 7px !important;
+  border-color: var(--vb-border) !important;
+  border-radius: 6px !important;
+  background: var(--vb-canvas-subtle);
+  color: var(--vb-muted);
+  font-size: 0.64rem !important;
+  font-weight: 650 !important;
+}
+
+.vibe-enterprise-shell #vibeKanban .spatial-card > div:last-child {
+  border-color: var(--vb-border) !important;
+}
+
+/* Tone down hover-only icon affordances without hiding them from keyboard users. */
+.vibe-enterprise-shell #vibeKanban .spatial-card .group-hover\:opacity-100 {
+  transition-duration: 100ms !important;
+}
+
+/* Empty states and add-column controls should recede into the board. */
+.vibe-enterprise-shell #vibeKanban [class*="border-dashed"] {
+  border-color: var(--vb-border-strong) !important;
+  background: transparent !important;
+  color: var(--vb-muted) !important;
+}
+
+/* Light mode utility remapping inside the widget. Existing Tailwind markup is
+ * intentionally left intact; this layer makes old dark-only utilities obey
+ * the design tokens while the component migration proceeds incrementally. */
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class~="text-white"],
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class~="text-slate-100"],
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class~="text-slate-200"] {
+  color: var(--vb-text) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class~="text-slate-300"] {
+  color: var(--vb-text-secondary) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class~="text-slate-400"],
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class~="text-slate-500"],
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class~="text-slate-600"] {
+  color: var(--vb-muted) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class*="bg-slate-950"],
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class*="bg-slate-900"],
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class*="bg-slate-800"] {
+  background-color: var(--vb-surface) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class*="border-slate"],
+.vibe-enterprise-shell.vibe-theme-light #vibeKanban [class*="border-white"] {
+  border-color: var(--vb-border) !important;
+}
+
+/* Theme the fixed dialogs opened from the board as well. */
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"][class*="bg-slate-950/80"] {
+  background: rgba(16, 24, 40, 0.46) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] > div[class*="bg-slate-900"] {
+  border-color: var(--vb-border) !important;
+  background: var(--vb-surface) !important;
+  color: var(--vb-text) !important;
+  box-shadow: var(--vb-shadow) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] [class~="text-white"],
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] [class~="text-slate-100"],
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] [class~="text-slate-200"] {
+  color: var(--vb-text) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] [class~="text-slate-300"],
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] [class~="text-slate-400"],
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] [class~="text-slate-500"] {
+  color: var(--vb-muted) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] [class*="bg-slate-950"],
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] [class*="bg-slate-900"] {
+  background-color: var(--vb-surface) !important;
+}
+
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] input,
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] textarea,
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] select,
+.vibe-enterprise-shell.vibe-theme-light > div[class*="fixed inset-0"] option {
+  border-color: var(--vb-border) !important;
+  background-color: var(--vb-canvas-subtle) !important;
+  color: var(--vb-text) !important;
+}
+
+/* Scrollbars match the surrounding theme without becoming prominent. */
+.vibe-enterprise-shell ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.vibe-enterprise-shell ::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vb-muted) 38%, transparent);
+  background-clip: padding-box;
+}
+
+.vibe-enterprise-shell ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--vb-muted) 60%, transparent);
+  background-clip: padding-box;
+}
+
+@media (max-width: 900px) {
+  .enterprise-board-modal {
+    width: 100vw;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .vibe-enterprise-shell #vibeKanban > div:first-child {
+    min-height: 56px;
+    padding: 9px 11px !important;
+  }
+
+  .vibe-enterprise-shell #vibeKanban > div[class*="flex-1 flex flex-col min-h-0"][class*="overflow-hidden"] {
+    padding: 10px;
+  }
+
+  .vibe-enterprise-shell #vibeKanban div[class*="w-80 flex flex-col h-full"] {
+    width: min(84vw, 286px) !important;
+    min-width: min(84vw, 286px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vibe-enterprise-shell *,
+  .vibe-enterprise-shell *::before,
+  .vibe-enterprise-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
