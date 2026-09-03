@@ -21,6 +21,8 @@ const forbidden = [
 
 const escaped = (value) => new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
 
+const read = (...parts) => fs.readFileSync(path.resolve(root, ...parts), 'utf8');
+
 test('Russian copy normalizer covers known untranslated product phrases', () => {
   for (const phrase of forbidden) {
     assert.match(source, escaped(phrase));
@@ -31,7 +33,7 @@ test('Russian copy normalizer covers known untranslated product phrases', () => 
 });
 
 test('editorial Russian layer contains no known legacy English labels', () => {
-  const editorial = fs.readFileSync(path.join(root, 'editorial.ts'), 'utf8');
+  const editorial = read('editorial.ts');
   const russian = editorial.split('export const editorialRu =')[1] || '';
   for (const phrase of forbidden) {
     assert.doesNotMatch(russian, escaped(phrase));
@@ -41,8 +43,8 @@ test('editorial Russian layer contains no known legacy English labels', () => {
   assert.doesNotMatch(russian, /\bviewport\b/i);
 });
 
-test('Russian terminology layer uses user-facing product language', () => {
-  const terminology = fs.readFileSync(path.join(root, 'terminology.ts'), 'utf8');
+test('Russian terminology layers use user-facing product language', () => {
+  const terminology = read('terminology.ts');
   const russian = terminology.split('export const terminologyRu =')[1] || '';
   for (const phrase of forbidden) {
     assert.doesNotMatch(russian, escaped(phrase));
@@ -51,12 +53,20 @@ test('Russian terminology layer uses user-facing product language', () => {
   assert.match(russian, /Открытый ключ виджета/);
   assert.match(russian, /Ключ приёма ошибок/);
   assert.match(russian, /Доска задач/);
+  assert.match(russian, /Критерии готовности/);
+
+  const engineering = read('engineeringTerms.ts');
+  const engineeringRu = engineering.split('export const engineeringTermsRu =')[1] || '';
+  assert.match(engineeringRu, /Уровень инженерной проверки/);
+  assert.match(engineeringRu, /Стандартный/);
+  assert.match(engineeringRu, /Строгий/);
+  assert.match(engineeringRu, /Критический/);
+  assert.match(engineeringRu, /Условие успешной проверки/);
 });
 
 test('create and dashboard pages do not bypass i18n for product labels', () => {
-  const pagesRoot = path.resolve(root, '..', 'pages');
-  const create = fs.readFileSync(path.join(pagesRoot, 'CreateProjectPage.tsx'), 'utf8');
-  const dashboard = fs.readFileSync(path.join(pagesRoot, 'DashboardPage.tsx'), 'utf8');
+  const create = read('..', 'pages', 'CreateProjectPage.tsx');
+  const dashboard = read('..', 'pages', 'DashboardPage.tsx');
 
   for (const label of ['>API Token<', '>Public Widget Key<', '>Runtime Ingest Key<', '>SECRET · one-time view<', '>Slug<', '>International · $<', '>CLI<']) {
     assert.doesNotMatch(create, escaped(label));
@@ -67,4 +77,44 @@ test('create and dashboard pages do not bypass i18n for product labels', () => {
 
   assert.match(create, /v7\.create\.labels\.project_address/);
   assert.match(dashboard, /v7\.dashboard\.labels\.workspace/);
+});
+
+test('onboarding, runtime, review and widget surfaces route product vocabulary through i18n', () => {
+  const components = path.resolve(root, '..', 'components');
+  const onboarding = fs.readFileSync(path.join(components, 'OnboardingGuideModal.tsx'), 'utf8');
+  const runtime = fs.readFileSync(path.join(components, 'RuntimeErrorsModal.tsx'), 'utf8');
+  const ticket = fs.readFileSync(path.join(components, 'TicketDetailModal.tsx'), 'utf8');
+  const widget = fs.readFileSync(path.join(components, 'VibusWidgetUI.tsx'), 'utf8');
+
+  assert.doesNotMatch(onboarding, />Runtime Bridge</);
+  assert.match(onboarding, /v7\.onboarding\.tabs\.runtime/);
+
+  assert.doesNotMatch(runtime, /status\.toUpperCase\(\)/);
+  assert.doesNotMatch(runtime, />Auto Ticket</);
+  assert.doesNotMatch(runtime, />Request ID</);
+  assert.match(runtime, /v7\.runtime\.item_status/);
+  assert.match(runtime, /v7\.runtime\.detail\.request_id/);
+
+  assert.doesNotMatch(ticket, />Definition of Done \(DoD\)</);
+  assert.doesNotMatch(ticket, />VERIFIED</);
+  assert.doesNotMatch(ticket, />HUMAN VERIFY</);
+  assert.doesNotMatch(ticket, />VERIFYING/);
+  assert.doesNotMatch(ticket, />⚡ Critical</);
+  assert.match(ticket, /v7\.ticket\.dod\.title/);
+  assert.match(ticket, /v7\.ticket\.dod\.human_verify/);
+
+  assert.doesNotMatch(widget, />Powered by</);
+  assert.match(widget, /widget\.powered_by/);
+});
+
+test('engineering criteria manager localizes its own vocabulary instead of presenting raw English labels', () => {
+  const manager = read('..', 'components', 'widget', 'ui', 'DoDManager.tsx');
+
+  for (const literal of ['>AI-Assisted<', '>Engineering Quality<', 'Standard = baseline', '>Security</option>', '>Boundary</option>', '>Spec</option>', '>Backend</option>', 'Verify: {item.requiredTest}', 'Pass: {item.passCondition}']) {
+    assert.doesNotMatch(manager, escaped(literal));
+  }
+  assert.match(manager, /v7\.dod\.quality_title/);
+  assert.match(manager, /v7\.dod\.quality\.\$\{mode\}/);
+  assert.match(manager, /v7\.dod\.verify_label/);
+  assert.match(manager, /v7\.dod\.pass_label/);
 });
