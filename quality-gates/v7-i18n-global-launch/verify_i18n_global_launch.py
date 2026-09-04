@@ -145,6 +145,7 @@ LAYERED_LOCALES = (
     ('i18n/terminology.ts', 'terminologyEn', 'terminologyRu'),
     ('i18n/engineeringTerms.ts', 'engineeringTermsEn', 'engineeringTermsRu'),
     ('i18n/enterpriseTerms.ts', 'enterpriseTermsEn', 'enterpriseTermsRu'),
+    ('i18n/productRadarTerms.ts', 'productRadarTermsEn', 'productRadarTermsRu'),
 )
 en_keys = set(base_en)
 ru_keys = set(base_ru)
@@ -232,6 +233,7 @@ LOCALE_IMPLEMENTATION_FILES = {
     'i18n/terminology.ts',
     'i18n/engineeringTerms.ts',
     'i18n/enterpriseTerms.ts',
+    'i18n/productRadarTerms.ts',
     'i18n/russianCopy.ts',
 }
 ALLOWED_CYRILLIC = {
