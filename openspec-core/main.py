@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import auth
 import billing_router
 import control_router
+import founder_ops
 import main_legacy as legacy
 import models
 import product_radar
@@ -89,6 +90,8 @@ manager = legacy.manager
 app.include_router(billing_router.router)
 app.include_router(control_router.router)
 app.include_router(product_radar.router)
+app.include_router(founder_ops.router)
+app.include_router(founder_ops.runtime_router)
 
 # Seed proxy-visible values so old imports keep working as before.
 async_session = legacy.async_session
