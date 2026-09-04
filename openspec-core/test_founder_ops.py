@@ -239,9 +239,10 @@ async def test_legacy_roadmap_only_lists_real_external_or_security_dependencies(
     response = await client.get("/api/control/roadmap", headers=admin["headers"])
     assert response.status_code == 200, response.text
     payload = response.json()
-    assert payload["implemented_surface"] == "/control/workbench"
-    assert payload["implemented_capabilities_endpoint"] == "/api/control/founder/capabilities"
+    assert payload["phase"] == "post-mvp"
     assert len(payload["items"]) == 2
     titles = {item["title"] for item in payload["items"]}
-    assert "Platform-admin passkey / MFA" in titles
-    assert "Provider-side refund and recurring cancellation adapters" in titles
+    assert titles == {
+        "Platform-admin passkey / MFA",
+        "Provider-side refund and recurring cancellation adapters",
+    }
