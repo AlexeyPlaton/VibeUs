@@ -26,6 +26,15 @@ def _replace_route_call(router: Any, path: str, method: str, replacement: Any) -
     raise RuntimeError(f"Route not found: {target} {path}")
 
 
+def _has_route(router: Any, path: str, method: str) -> bool:
+    target = method.upper()
+    return any(
+        getattr(route, "path", None) == path
+        and target in (getattr(route, "methods", None) or set())
+        for route in router.routes
+    )
+
+
 async def _credential_for_project(project: Any, repo: str | None = None, legacy_override: str | None = None) -> tuple[str, str]:
     repository = github_app_auth._safe_repo(repo or getattr(project, "github_repo", None))
     legacy_pat = legacy_override
@@ -158,16 +167,19 @@ def install_integration_extensions(module: Any) -> None:
     module.get_automation_config = get_automation_config
     module.automation_overview = automation_overview
     module.create_handoff = create_handoff
-    module.router.include_router(github_app_router)
-    module.router.include_router(preview_router)
     _replace_route_call(module.router, "/api/projects/{slug}/automation", "GET", get_automation_config)
     _replace_route_call(module.router, "/api/projects/{slug}/automation/overview", "GET", automation_overview)
     _replace_route_call(module.router, "/api/projects/{slug}/tickets/{ticket_id}/ai/handoff", "POST", create_handoff)
 
-    # Keep the historical GitHub Issue sync surface working after the PAT is
-    # removed. The route dependency graphs stay unchanged; only the execution
-    # call is replaced so existing auth/capability checks remain authoritative.
     import main_legacy
+
+    # The AI router can already have been included in the effective app before
+    # this runtime hook executes. Register new independent surfaces directly on
+    # that effective app so import order cannot silently drop them.
+    if not _has_route(main_legacy.app.router, "/api/projects/{slug}/github/app", "GET"):
+        main_legacy.app.include_router(github_app_router)
+    if not _has_route(main_legacy.app.router, "/api/projects/{slug}/automation/preview", "GET"):
+        main_legacy.app.include_router(preview_router)
 
     async def legacy_get_github_config(slug: str, project: Any):
         status = await integration_status(project)
