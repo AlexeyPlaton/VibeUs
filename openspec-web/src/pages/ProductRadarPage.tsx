@@ -84,7 +84,7 @@ function RadarChart({ dimensions }: { dimensions: RadarDimension[] }) {
   const center = size / 2;
   const radius = 125;
   const angleFor = (index: number) => -Math.PI / 2 + (index * Math.PI * 2) / Math.max(items.length, 1);
-  const point = (index: number, factor: number) => {
+  const point = (index: number, factor: number): [number, number] => {
     const angle = angleFor(index);
     return [center + Math.cos(angle) * radius * factor, center + Math.sin(angle) * radius * factor];
   };
