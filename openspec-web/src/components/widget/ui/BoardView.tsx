@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { KanbanColumn } from './KanbanColumn';
-import { ArchiveRestore, Check, Filter, Layers, Plus, Search, X } from 'lucide-react';
+import { ArchiveRestore, Check, Filter, Layers, Plus, RotateCcw, Search, X } from 'lucide-react';
 
 export const BoardView = ({ state }: { state: any }) => {
   const {
@@ -25,9 +25,23 @@ export const BoardView = ({ state }: { state: any }) => {
   const [inlineColumnTitle, setInlineColumnTitle] = useState('');
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
   const [inlineBoardTitle, setInlineBoardTitle] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const customBoards = boardData.custom_boards || boardData.boards || [];
   const normalizedSearch = String(searchQuery || '').trim().toLowerCase();
+  const currentBoard = activeBoardId && activeBoardId !== 'all'
+    ? customBoards.find((board: any) => board.id === activeBoardId)
+    : null;
+  const activeSpecNodeIds = new Set<string>(
+    activeSpecFilter && activeSpecFilter !== 'all'
+      ? [
+          activeSpecFilter,
+          ...boardData.nodes
+            .filter((node: any) => node.parent_id === activeSpecFilter)
+            .map((node: any) => node.id),
+        ]
+      : [],
+  );
 
   const handleInlineColumnSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,10 +72,72 @@ export const BoardView = ({ state }: { state: any }) => {
     return haystack.includes(normalizedSearch);
   };
 
+  const matchesScope = (ticket: any) => {
+    if (activeBoardId && activeBoardId !== 'all') {
+      const inBoard = ticket.board_id === activeBoardId
+        || Boolean(currentBoard && ticket.tags && ticket.tags.includes(currentBoard.title));
+      if (!inBoard) return false;
+    }
+
+    if (activeSpecFilter && activeSpecFilter !== 'all') {
+      const nodeId = ticket.node_id || 'general';
+      if (!activeSpecNodeIds.has(nodeId)) return false;
+    }
+
+    if (!showArchivedDone && ticket.is_archived) return false;
+    return true;
+  };
+
+  const scopedTickets = allTickets.filter((ticket: any) => matchesScope(ticket));
+  const visibleTickets = normalizedSearch
+    ? scopedTickets.filter((ticket: any) => matchesSearch(ticket))
+    : scopedTickets;
+  const hasActiveFilters = Boolean(
+    normalizedSearch
+    || (activeSpecFilter && activeSpecFilter !== 'all')
+    || (activeBoardId && activeBoardId !== 'all')
+    || showArchivedDone,
+  );
+  const filteringEmptyState = Boolean(normalizedSearch || (activeSpecFilter && activeSpecFilter !== 'all'));
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setActiveSpecFilter('all');
+    setActiveBoardId('all');
+    setShowArchivedDone(false);
+    searchInputRef.current?.focus();
+  };
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTyping = Boolean(
+        target?.closest('input, textarea, select, [contenteditable="true"]'),
+      );
+      const isSearchShortcut = event.key === '/'
+        || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k');
+
+      if (isSearchShortcut && !isTyping) {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      if (event.key === 'Escape' && document.activeElement === searchInputRef.current && normalizedSearch) {
+        event.preventDefault();
+        setSearchQuery('');
+      }
+    };
+
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [normalizedSearch, setSearchQuery]);
+
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-transparent overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
-      <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-3 text-xs xl:flex-nowrap">
-        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-lg border border-white/[0.08] bg-slate-900/80 p-1">
+      <div className="enterprise-board-toolbar mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-3 text-xs xl:flex-nowrap">
+        <div className="enterprise-board-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-lg border border-white/[0.08] bg-slate-900/80 p-1">
           <button
             type="button"
             onClick={() => setActiveBoardId('all')}
@@ -152,19 +228,25 @@ export const BoardView = ({ state }: { state: any }) => {
           ))}
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
-          <label className="flex h-8 w-40 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-slate-900 px-2.5 focus-within:border-indigo-500/40 sm:w-48">
+        <div className="enterprise-board-controls flex shrink-0 items-center gap-1.5">
+          <label className="enterprise-board-search flex h-8 w-48 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-slate-900 px-2.5 focus-within:border-indigo-500/40 sm:w-56">
             <Search className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             <input
+              ref={searchInputRef}
               type="search"
               value={searchQuery || ''}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t18n('v7.board.search_tasks')}
+              aria-label={t18n('v7.board.search_tasks')}
               className="min-w-0 flex-1 bg-transparent text-[11px] text-slate-200 outline-none placeholder:text-slate-500"
             />
+            <kbd
+              className="enterprise-shortcut-key hidden rounded border border-white/[0.08] px-1 py-0.5 font-mono text-[9px] font-medium text-slate-500 sm:inline"
+              title={t18n('v7.board.search_shortcut')}
+            >/</kbd>
           </label>
 
-          <div className="flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-slate-900 px-2.5">
+          <div className="enterprise-board-filter flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-slate-900 px-2.5">
             <Filter className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             <select
               value={activeSpecFilter || 'all'}
@@ -177,6 +259,22 @@ export const BoardView = ({ state }: { state: any }) => {
               ))}
             </select>
           </div>
+
+          <span className="enterprise-board-result-count hidden h-8 items-center whitespace-nowrap rounded-lg border border-white/[0.06] px-2.5 text-[10px] font-semibold tabular-nums text-slate-500 lg:flex">
+            {t18n('v7.board.results', { visible: visibleTickets.length, total: scopedTickets.length })}
+          </span>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="enterprise-clear-filters flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/[0.08] px-2.5 text-[10px] font-semibold text-slate-400 transition-colors hover:bg-white/[0.05] hover:text-white"
+              title={t18n('v7.board.clear_filters')}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span className="hidden 2xl:inline">{t18n('v7.board.clear_filters')}</span>
+            </button>
+          )}
 
           {(() => {
             const archivedCount = allTickets.filter((ticket: any) => ticket.is_archived).length;
@@ -199,28 +297,10 @@ export const BoardView = ({ state }: { state: any }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="flex h-full w-max items-stretch gap-3 pb-1">
+      <div className="enterprise-board-scroll flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="enterprise-board-columns flex h-full w-max items-stretch gap-3 pb-1">
           {activeColumns.map((col: any) => {
-            let colTickets = allTickets.filter((ticket: any) => ticket.status === col.id);
-
-            if (activeBoardId && activeBoardId !== 'all') {
-              const currentBoard = customBoards.find((board: any) => board.id === activeBoardId);
-              colTickets = colTickets.filter((ticket: any) =>
-                ticket.board_id === activeBoardId || (currentBoard && ticket.tags && ticket.tags.includes(currentBoard.title))
-              );
-            }
-
-            if (activeSpecFilter && activeSpecFilter !== 'all') {
-              const nodeIds = [
-                activeSpecFilter,
-                ...boardData.nodes.filter((node: any) => node.parent_id === activeSpecFilter).map((node: any) => node.id),
-              ];
-              colTickets = colTickets.filter((ticket: any) => nodeIds.includes(ticket.node_id || 'general') || (!ticket.node_id && nodeIds.includes('general')));
-            }
-
-            if (!showArchivedDone) colTickets = colTickets.filter((ticket: any) => !ticket.is_archived);
-            if (normalizedSearch) colTickets = colTickets.filter(matchesSearch);
+            const colTickets = visibleTickets.filter((ticket: any) => ticket.status === col.id);
 
             return (
               <KanbanColumn
@@ -253,6 +333,7 @@ export const BoardView = ({ state }: { state: any }) => {
                 canWrite={canWrite}
                 canReview={canReview}
                 handleAddTicket={handleAddTicket}
+                isFiltering={filteringEmptyState}
               />
             );
           })}
