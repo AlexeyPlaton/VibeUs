@@ -1,0 +1,208 @@
+"""Runtime hardening for the provider-agnostic AI orchestration router.
+
+The release wrapper owns final transport assembly, so this module installs the
+small pieces of policy that depend on the effective hosted runtime rather than
+on a specific AI provider. Keeping them separate also makes these policies easy
+to regression-test without calling a real GitHub account.
+"""
+from __future__ import annotations
+
+from typing import Any, Optional
+
+from fastapi import HTTPException, Request
+
+
+_INSTALLED = False
+
+
+def install_ai_orchestration_runtime(module: Any) -> None:
+    """Install idempotent fail-closed runtime policy overrides."""
+    global _INSTALLED
+    if _INSTALLED:
+        return
+
+    original_get_config = module._get_or_create_config
+    original_config_payload = module._config_payload
+
+    async def get_or_create_config(db: Any, project: Any) -> Any:
+        config = await original_get_config(db, project)
+        # "Autopilot PR" and "Delivery" mean automatic dispatch only when the
+        # configured execution surface actually supports a server-side trigger.
+        # Web chats remain explicit handoffs because VibeUs must not pretend it
+        # can launch a browser chat on the user's behalf.
+        dispatch_capable = config.agent_kind in {"jules", "github_label_agent"}
+        if config.autonomy_mode in {"autopilot_pr", "delivery"} and dispatch_capable:
+            config.auto_dispatch_on_handoff = True
+        if not dispatch_capable:
+            config.auto_dispatch_on_handoff = False
+        return config
+
+    def config_payload(config: Any, request: Request) -> dict[str, Any]:
+        payload = original_config_payload(config, request)
+        slug = str(request.path_params.get("slug") or "").strip()
+        if slug:
+            payload["webhook_url"] = (
+                f"{str(request.base_url).rstrip('/')}/api/projects/"
+                f"{slug}/automation/github-webhook"
+            )
+        return payload
+
+    async def preview_url(project: Any, head_sha: str) -> Optional[str]:
+        # Preview discovery is additive. A fine-grained GitHub credential may
+        # legitimately omit Deployments read permission; that must never turn a
+        # green PR into a failed reconciliation.
+        try:
+            deployments = await module._gh(
+                project,
+                "GET",
+                "/deployments",
+                params={"sha": head_sha, "per_page": 10},
+            )
+            for deployment in deployments or []:
+                try:
+                    statuses = await module._gh(
+                        project,
+                        "GET",
+                        f"/deployments/{deployment['id']}/statuses",
+                        params={"per_page": 10},
+                    )
+                except HTTPException:
+                    continue
+                for status in statuses or []:
+                    if status.get("state") == "success":
+                        url = status.get("environment_url") or status.get("target_url")
+                        if isinstance(url, str) and url.startswith(("https://", "http://")):
+                            return url[:2048]
+        except HTTPException:
+            return None
+        return None
+
+    async def reconcile(db: Any, project: Any, ticket: Any, state: Any, config: Any) -> Any:
+        if not state.github_pr_number:
+            return state
+
+        pr = await module._gh(project, "GET", f"/pulls/{state.github_pr_number}")
+        head_sha = str((pr.get("head") or {}).get("sha") or "")
+        state.head_sha = head_sha or state.head_sha
+        state.github_pr_url = str(pr.get("html_url") or state.github_pr_url or "") or None
+        state.branch_name = str((pr.get("head") or {}).get("ref") or state.branch_name or "") or None
+
+        if pr.get("merged_at"):
+            state.orchestration_status = "merged_waiting_human_acceptance"
+            state.ci_state = "success"
+            await db.commit()
+            return state
+        if pr.get("state") == "closed":
+            state.orchestration_status = "pr_closed"
+            await db.commit()
+            return state
+        if not config.observe_ci:
+            state.ci_state = "not_observed"
+            state.orchestration_status = "pr_open"
+            await db.commit()
+            return state
+
+        checks = await module._gh(project, "GET", f"/commits/{head_sha}/check-runs")
+        combined = await module._gh(project, "GET", f"/commits/{head_sha}/status")
+        runs = list((checks or {}).get("check_runs") or [])
+        combined_total = int((combined or {}).get("total_count") or 0)
+        combined_state = str((combined or {}).get("state") or "pending").lower()
+        failed_conclusions = {
+            "failure",
+            "cancelled",
+            "timed_out",
+            "action_required",
+            "stale",
+            "startup_failure",
+        }
+
+        pending = any(run.get("status") != "completed" for run in runs)
+        failed = any(
+            str(run.get("conclusion") or "").lower() in failed_conclusions
+            for run in runs
+        )
+        # GitHub Actions reports through Check Runs. Repositories that do not use
+        # legacy commit statuses return state=pending with total_count=0; treating
+        # that empty status API as a real pending signal would keep every Actions-
+        # only PR stuck forever.
+        if combined_total > 0:
+            if combined_state in {"failure", "error"}:
+                failed = True
+            elif combined_state == "pending":
+                pending = True
+
+        has_ci_signal = bool(runs) or combined_total > 0
+        success = has_ci_signal and not failed and not pending
+        state.last_check_summary = {
+            "total": len(runs),
+            "failed": sum(
+                1
+                for run in runs
+                if str(run.get("conclusion") or "").lower() in failed_conclusions
+            ),
+            "combined": combined_state if combined_total > 0 else "none",
+            "combined_total": combined_total,
+            "head_sha": head_sha,
+        }
+
+        if failed:
+            state.ci_state = "failure"
+            if state.last_failed_head_sha != head_sha:
+                state.repair_attempts = int(state.repair_attempts or 0) + 1
+                state.last_failed_head_sha = head_sha
+            if state.repair_attempts > int(config.max_repair_attempts or 0):
+                state.orchestration_status = "blocked_repair_budget"
+            elif state.provider == "jules":
+                state.orchestration_status = "native_repair_monitoring"
+            else:
+                state.orchestration_status = "repair_handoff_ready"
+            await db.commit()
+            return state
+
+        if not success:
+            state.ci_state = "pending"
+            state.orchestration_status = "ci_running"
+            await db.commit()
+            return state
+
+        state.ci_state = "success"
+        if config.observe_preview:
+            state.preview_url = await preview_url(project, head_sha)
+
+        ready, missing = module.criteria_auto_review_ready(ticket)
+        state.last_check_summary = {
+            **dict(state.last_check_summary or {}),
+            "vibeus_evidence_ready": ready,
+            "missing_evidence": missing,
+        }
+        if ready and config.auto_move_to_review and ticket.status not in {"review", "done"}:
+            ticket.status = "review"
+            ticket.revision = int(ticket.revision or 0) + 1
+            project.revision = int(project.revision or 0) + 1
+            state.orchestration_status = "review_ready"
+            db.add(
+                module.models.AuditEvent(
+                    workspace_id=project.workspace_id,
+                    project_id=project.id,
+                    event_type="automation.review_ready",
+                    details={
+                        "ticket_id": ticket.id,
+                        "pr_number": state.github_pr_number,
+                        "human_acceptance_required": True,
+                    },
+                )
+            )
+        elif ready and state.preview_url:
+            state.orchestration_status = "preview_ready_for_human_review"
+        elif ready:
+            state.orchestration_status = "review_gate_ready"
+        else:
+            state.orchestration_status = "ci_green_evidence_pending"
+        await db.commit()
+        return state
+
+    module._get_or_create_config = get_or_create_config
+    module._config_payload = config_payload
+    module._preview_url = preview_url
+    module._reconcile = reconcile
+    _INSTALLED = True

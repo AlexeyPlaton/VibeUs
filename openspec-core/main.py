@@ -260,6 +260,9 @@ async def update_project_error_status(
 # partially assembled app fail closed instead of silently shipping without the
 # orchestration API under module-collection/import-order edge cases.
 import ai_orchestration as _ai_orchestration
+from ai_orchestration_runtime import install_ai_orchestration_runtime
+
+install_ai_orchestration_runtime(_ai_orchestration)
 
 _AI_OVERVIEW_PATH = "/api/projects/{slug}/automation/overview"
 if not _ai_orchestration.router.routes:
