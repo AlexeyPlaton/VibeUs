@@ -39,6 +39,14 @@ class Settings(BaseSettings):
     enable_enhanced_diagnostics: bool = False
     enable_demo_seed: bool = True
 
+    # Founder Control Center is fail-closed and independent from workspace RBAC.
+    # Enabling it without an explicit platform-admin allow-list is invalid in
+    # production. Sensitive mutations additionally require short-lived password
+    # re-authentication and use a dedicated HttpOnly elevation cookie.
+    enable_control_center: bool = False
+    platform_admin_emails: list[str] | str = Field(default_factory=list)
+    control_elevation_minutes: int = Field(default=15, ge=5, le=60)
+
     # Canonical commercial catalog. Backend charges and public pricing UI read
     # the same values; do not duplicate plan amounts in React.
     billing_period_days: int = Field(default=30, ge=1, le=366)
@@ -85,6 +93,13 @@ class Settings(BaseSettings):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
 
+    @field_validator("platform_admin_emails", mode="after")
+    @classmethod
+    def parse_platform_admin_emails(cls, value):
+        if isinstance(value, str):
+            value = [item.strip() for item in value.split(",") if item.strip()]
+        return [str(item).strip().lower() for item in value if str(item).strip()]
+
     @model_validator(mode="after")
     def validate_production(self):
         if self.environment != "production":
@@ -103,6 +118,12 @@ class Settings(BaseSettings):
             errors.append("Mock billing is forbidden in production")
         if self.enable_demo_seed:
             errors.append("Demo seeding is forbidden in production; provision demo data explicitly")
+        if self.enable_control_center:
+            admin_emails = self.platform_admin_emails if isinstance(self.platform_admin_emails, list) else []
+            if not admin_emails:
+                errors.append("PLATFORM_ADMIN_EMAILS is required when ENABLE_CONTROL_CENTER=true")
+            elif any("@" not in email or "*" in email for email in admin_emails):
+                errors.append("PLATFORM_ADMIN_EMAILS must contain explicit email addresses; wildcards are forbidden")
         public_host = (self.public_base_url.host or "").lower().strip(".")
         preview_host = (self.preview_base_url.host or "").lower().strip(".")
         public_site_hint = ".".join(public_host.split(".")[-2:]) if public_host else ""
