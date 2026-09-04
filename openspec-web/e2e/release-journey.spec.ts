@@ -6,10 +6,12 @@ async function registerAndCreateFreeProject(page: Page) {
   await page.goto('/create');
 
   await page.getByRole('button', { name: /register|sign up|регистра/i }).click();
-  await page.getByPlaceholder('developer@example.com').fill(`e2e-${suffix}@example.com`);
+  const emailInput = page.getByPlaceholder('developer@example.com');
+  await emailInput.fill(`e2e-${suffix}@example.com`);
   await page.locator('input[type="password"]').fill('E2E-password-12345!');
   await page.locator('input[type="checkbox"]').check();
-  await page.locator('form button[type="submit"]').click();
+  const authForm = page.locator('form').filter({ has: emailInput });
+  await authForm.getByRole('button').click();
 
   await expect(page.locator('input[placeholder="frontend-redesign"]')).toBeVisible();
   const requiredInputs = page.locator('form input[required]');
