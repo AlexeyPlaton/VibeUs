@@ -112,6 +112,7 @@ const layered = [
   ['openspec-web/src/i18n/terminology.ts', 'terminologyEn', 'terminologyRu'],
   ['openspec-web/src/i18n/engineeringTerms.ts', 'engineeringTermsEn', 'engineeringTermsRu'],
   ['openspec-web/src/i18n/enterpriseTerms.ts', 'enterpriseTermsEn', 'enterpriseTermsRu'],
+  ['openspec-web/src/i18n/productRadarTerms.ts', 'productRadarTermsEn', 'productRadarTermsRu'],
 ];
 for (const [file, enExport, ruExport] of layered) {
   const source = read(file);
