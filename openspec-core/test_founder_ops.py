@@ -231,3 +231,17 @@ async def test_founder_workbench_promotes_safe_post_mvp_capabilities_without_imp
     assert by_key["feature_flags"]["status"] == "implemented"
     assert by_key["platform_admin_mfa"]["status"].startswith("blocked")
     assert by_key["provider_refund_cancel"]["status"].startswith("blocked")
+
+
+@pytest.mark.asyncio
+async def test_legacy_roadmap_only_lists_real_external_or_security_dependencies(client: AsyncClient):
+    admin = await register_and_login(client, "founder@vibeus.test")
+    response = await client.get("/api/control/roadmap", headers=admin["headers"])
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["implemented_surface"] == "/control/workbench"
+    assert payload["implemented_capabilities_endpoint"] == "/api/control/founder/capabilities"
+    assert len(payload["items"]) == 2
+    titles = {item["title"] for item in payload["items"]}
+    assert "Platform-admin passkey / MFA" in titles
+    assert "Provider-side refund and recurring cancellation adapters" in titles
