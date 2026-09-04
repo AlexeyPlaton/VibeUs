@@ -20,19 +20,29 @@ def test_ai_orchestration_routes_are_registered_without_auto_merge():
     assert not any("/ai/merge" in path or "/automation/merge" in path for path in paths)
 
 
-def test_ai_handoff_uses_real_checklist_items_as_definition_of_done():
+def test_ai_handoff_uses_production_checklist_keys_as_definition_of_done():
     ticket = SimpleNamespace(
         checklists={
-            "items": [
-                {"text": "Checkout works at 390px viewport", "completed": False},
-                {"text": "Regression test covers the failure", "completed": True},
-            ]
+            "Checkout works at 390px viewport": False,
+            "Regression test covers the failure": True,
         }
     )
     assert ai_orchestration._dod(ticket) == [
         "Checkout works at 390px viewport",
         "Regression test covers the failure",
     ]
+
+
+def test_ai_handoff_keeps_legacy_items_checklist_compatibility():
+    ticket = SimpleNamespace(
+        checklists={
+            "items": [
+                {"text": "Legacy criterion one", "completed": False},
+                {"text": "Legacy criterion two", "completed": True},
+            ]
+        }
+    )
+    assert ai_orchestration._dod(ticket) == ["Legacy criterion one", "Legacy criterion two"]
     assert "items" not in ai_orchestration._dod(ticket)
 
 
