@@ -87,6 +87,25 @@ sys.modules[__name__].__class__ = _CompatMainModule
 install_runtime_invariants()
 app = legacy.app
 manager = legacy.manager
+
+# The former Post-MVP roadmap is now mostly implemented in /control/workbench.
+# Keep the existing /api/control/roadmap handler as the single route, but narrow
+# its module-level catalog before the router is copied into the final app. This is
+# more robust than shadowing/duplicating a FastAPI route and keeps the legacy tab
+# truthful: only external/security dependencies that would be unsafe to fake remain.
+control_router.ROADMAP = [
+    {
+        "area": "Security",
+        "title": "Platform-admin passkey / MFA",
+        "description": "Blocked until VibeUs has a real WebAuthn/passkey enrollment, verification, recovery and revocation lifecycle. A UI toggle is not MFA.",
+    },
+    {
+        "area": "Revenue",
+        "title": "Provider-side refund and recurring cancellation adapters",
+        "description": "Blocked until the approved production payment provider and its exact refund/subscription/fiscal semantics are verified. Local ledger mutation is never presented as a remote refund.",
+    },
+]
+
 app.include_router(billing_router.router)
 app.include_router(control_router.router)
 app.include_router(product_radar.router)
@@ -109,35 +128,6 @@ def _drop_api_route(path: str, method: str) -> None:
             and method in (getattr(route, "methods", None) or set())
         )
     ]
-
-
-# The historical Operations Console still has a Post-MVP TODO tab. Most of that
-# roadmap now has real first-party implementations in /control/workbench, so the
-# legacy tab must not keep claiming those capabilities are unfinished. It now
-# shows only dependencies that would be unsafe to fake.
-_drop_api_route("/api/control/roadmap", "GET")
-
-
-@app.get('/api/control/roadmap')
-async def remaining_founder_roadmap(
-    _admin: models.User = Depends(control_router.require_platform_admin),
-):
-    return {
-        "items": [
-            {
-                "area": "Security",
-                "title": "Platform-admin passkey / MFA",
-                "description": "Blocked until VibeUs has a real WebAuthn/passkey enrollment, verification, recovery and revocation lifecycle. A UI toggle is not MFA.",
-            },
-            {
-                "area": "Revenue",
-                "title": "Provider-side refund and recurring cancellation adapters",
-                "description": "Blocked until the approved production payment provider and its exact refund/subscription/fiscal semantics are verified. Local ledger mutation is never presented as a remote refund.",
-            },
-        ],
-        "implemented_surface": "/control/workbench",
-        "implemented_capabilities_endpoint": "/api/control/founder/capabilities",
-    }
 
 
 # Existing React releases call this Stripe-shaped endpoint for the international
