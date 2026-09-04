@@ -45,7 +45,7 @@ test('register -> free project -> one-time credentials', async ({ page }, testIn
 });
 
 
-test('enterprise task board switches light/dark theme and remembers the choice', async ({ page }, testInfo) => {
+test('enterprise task board persists theme and density and supports keyboard search', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium', 'Enterprise board journey runs once on desktop');
   const { slug } = await registerAndCreateFreeProject(page);
 
@@ -57,20 +57,37 @@ test('enterprise task board switches light/dark theme and remembers the choice',
   const shell = page.locator('.enterprise-board-host');
   await expect(page.locator('.enterprise-board-modal')).toBeVisible();
   await expect(shell).toHaveClass(/vibe-theme-(?:light|dark)/);
+  await expect(shell).toHaveClass(/vibe-density-(?:comfortable|compact)/);
   await expect(page.locator('.enterprise-board-stage .spatial-kanban')).toBeVisible();
 
   const before = await shell.getAttribute('class');
   const beforeTheme = before?.includes('vibe-theme-light') ? 'light' : 'dark';
   const afterTheme = beforeTheme === 'light' ? 'dark' : 'light';
+  const beforeDensity = before?.includes('vibe-density-compact') ? 'compact' : 'comfortable';
+  const afterDensity = beforeDensity === 'compact' ? 'comfortable' : 'compact';
 
-  await shell.locator('header button').first().click();
+  await shell.getByRole('button', { name: /light theme|dark theme|светл|т[её]мн/i }).click();
   await expect(shell).toHaveClass(new RegExp(`vibe-theme-${afterTheme}`));
   await expect.poll(async () => page.evaluate(() => localStorage.getItem('vibus_board_theme'))).toBe(afterTheme);
 
-  await shell.locator('header button').last().click();
+  await shell.getByRole('button', { name: /compact density|comfortable density|компакт|свободн/i }).click();
+  await expect(shell).toHaveClass(new RegExp(`vibe-density-${afterDensity}`));
+  await expect.poll(async () => page.evaluate(() => localStorage.getItem('vibus_board_density'))).toBe(afterDensity);
+
+  await page.keyboard.press('/');
+  const taskSearch = shell.getByRole('searchbox');
+  await expect(taskSearch).toBeFocused();
+  await taskSearch.fill('definitely-no-such-task');
+  await expect(shell.getByText(/No tasks match the current filters|По текущим фильтрам задач нет/i).first()).toBeVisible();
+  await shell.getByRole('button', { name: /clear filters|сбросить фильтры/i }).click();
+  await expect(taskSearch).toHaveValue('');
+
+  await shell.getByRole('button', { name: /close board|закрыть доску/i }).click();
   await expect(page.locator('.enterprise-board-modal')).toHaveCount(0);
   await openBoard(project);
-  await expect(page.locator('.enterprise-board-host')).toHaveClass(new RegExp(`vibe-theme-${afterTheme}`));
+  const reopenedShell = page.locator('.enterprise-board-host');
+  await expect(reopenedShell).toHaveClass(new RegExp(`vibe-theme-${afterTheme}`));
+  await expect(reopenedShell).toHaveClass(new RegExp(`vibe-density-${afterDensity}`));
 });
 
 
