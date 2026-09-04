@@ -25,40 +25,52 @@ def install_ai_orchestration_runtime(module: Any) -> None:
     original_config_payload = module._config_payload
 
     def dod(ticket: Any) -> list[str]:
-        """Extract human-readable DoD items from current and legacy checklist shapes."""
+        """Extract human-readable DoD from the current map shape and legacy items[]."""
         raw = getattr(ticket, "checklists", None) or {}
-        items: Any = raw.get("items", []) if isinstance(raw, dict) else raw
         result: list[str] = []
-        if isinstance(items, list):
-            for item in items[:100]:
+
+        def append_text(value: Any) -> None:
+            text = str(value or "").strip()
+            if text and text not in result:
+                result.append(text[:2_000])
+
+        if isinstance(raw, dict):
+            legacy_items = raw.get("items")
+            if isinstance(legacy_items, list):
+                for item in legacy_items[:100]:
+                    if isinstance(item, dict):
+                        append_text(
+                            item.get("text")
+                            or item.get("title")
+                            or item.get("requirement")
+                            or item.get("label")
+                        )
+                    else:
+                        append_text(item)
+            else:
+                # Current production shape: {"human-readable criterion": bool}.
+                # The key is the DoD text; the bool is only the completion claim.
+                for key, item in list(raw.items())[:100]:
+                    if isinstance(item, dict):
+                        append_text(
+                            item.get("text")
+                            or item.get("title")
+                            or item.get("requirement")
+                            or key
+                        )
+                    else:
+                        append_text(key)
+        elif isinstance(raw, list):
+            for item in raw[:100]:
                 if isinstance(item, dict):
-                    text = (
+                    append_text(
                         item.get("text")
                         or item.get("title")
                         or item.get("requirement")
                         or item.get("label")
-                        or ""
                     )
                 else:
-                    text = item
-                value = str(text or "").strip()
-                if value and value not in result:
-                    result.append(value[:2_000])
-        elif isinstance(raw, dict):
-            # Compatibility for early checklist maps where the human-readable
-            # criterion itself was stored as the key/value rather than in items.
-            for key, item in list(raw.items())[:100]:
-                if key == "items":
-                    continue
-                if isinstance(item, dict):
-                    text = item.get("text") or item.get("title") or item.get("requirement")
-                elif isinstance(item, str):
-                    text = item
-                else:
-                    text = key
-                value = str(text or "").strip()
-                if value and value not in result:
-                    result.append(value[:2_000])
+                    append_text(item)
         return result
 
     async def get_or_create_config(db: Any, project: Any) -> Any:
