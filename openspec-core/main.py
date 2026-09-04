@@ -23,7 +23,6 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import ai_orchestration
 import auth
 import billing_router
 import main_legacy as legacy
@@ -254,13 +253,23 @@ async def update_project_error_status(
     }
 
 
-# Include the orchestration router only after the legacy-wrapper route surgery is
-# complete. This makes the final FastAPI surface deterministic during test-module
-# collection and prevents later legacy route replacements from observing a
-# partially assembled orchestration surface.
+# The legacy application performs a small amount of route replacement while this
+# wrapper is importing. Bind the new orchestration surface only after that work is
+# complete. A direct route-list fallback is intentionally narrow: FastAPI's
+# include_router should normally register everything, while the fallback makes a
+# partially assembled app fail closed instead of silently shipping without the
+# orchestration API under module-collection/import-order edge cases.
+import ai_orchestration as _ai_orchestration
+
 _AI_OVERVIEW_PATH = "/api/projects/{slug}/automation/overview"
+if not _ai_orchestration.router.routes:
+    raise RuntimeError("AI orchestration router is empty")
 if not any(getattr(route, "path", None) == _AI_OVERVIEW_PATH for route in app.router.routes):
-    app.include_router(ai_orchestration.router)
+    app.include_router(_ai_orchestration.router)
+if not any(getattr(route, "path", None) == _AI_OVERVIEW_PATH for route in app.router.routes):
+    app.router.routes.extend(_ai_orchestration.router.routes)
+if not any(getattr(route, "path", None) == _AI_OVERVIEW_PATH for route in app.router.routes):
+    raise RuntimeError("AI orchestration routes were not registered")
 
 settings = legacy.settings
 lifespan = legacy.lifespan
