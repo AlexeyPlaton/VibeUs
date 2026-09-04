@@ -116,6 +116,15 @@ test('ticket to AI to PR UX is a visible gated flow with exact-head safe preview
   assert.match(page, /navigate\(`\/app\/ai\/\$\{encodeURIComponent\(projectSlug\)\}\?ticket=/);
 });
 
+test('local Vite dev server proxies account API paths instead of returning SPA html', () => {
+  const vite = read('vite.config.ts');
+  assert.match(vite, /VITE_DEV_API_URL/);
+  assert.match(vite, /'\/api'/);
+  assert.match(vite, /http:\/\/127\.0\.0\.1:8000/);
+  assert.match(vite, /proxy:/);
+  assert.match(vite, /isWidgetBuild \? \{/);
+});
+
 test('English and Russian orchestration and delivery terms remain layered symmetrically', () => {
   const terms = read('src/i18n/enterpriseTerms.ts');
 
