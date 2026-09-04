@@ -280,12 +280,20 @@ if not any(getattr(route, "path", None) == _AI_OVERVIEW_PATH for route in app.ro
     raise RuntimeError("AI orchestration routes were not registered")
 
 # Independent delivery-integration routers must be attached to the final wrapper
-# app, not merely to the already-included AI router. This keeps startup correct
-# under import-order/test-collection variations and fails closed if wiring drifts.
+# app. Some historical import/test paths mutate the route list after include_router,
+# so the same narrow direct-list fallback used above for AI is required here too.
+if not _github_app_router.routes:
+    raise RuntimeError("GitHub App integration router is empty")
+if not _preview_router.routes:
+    raise RuntimeError("Preview integration router is empty")
 if not any(getattr(route, "path", None) == _GITHUB_APP_PATH for route in app.router.routes):
     app.include_router(_github_app_router)
+if not any(getattr(route, "path", None) == _GITHUB_APP_PATH for route in app.router.routes):
+    app.router.routes.extend(_github_app_router.routes)
 if not any(getattr(route, "path", None) == _PREVIEW_CONFIG_PATH for route in app.router.routes):
     app.include_router(_preview_router)
+if not any(getattr(route, "path", None) == _PREVIEW_CONFIG_PATH for route in app.router.routes):
+    app.router.routes.extend(_preview_router.routes)
 if not any(getattr(route, "path", None) == _GITHUB_APP_PATH for route in app.router.routes):
     raise RuntimeError("GitHub App integration routes were not registered")
 if not any(getattr(route, "path", None) == _PREVIEW_CONFIG_PATH for route in app.router.routes):
