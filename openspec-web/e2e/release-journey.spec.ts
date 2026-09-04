@@ -31,6 +31,13 @@ async function registerAndCreateFreeProject(page: Page) {
   return { publicKey, workspaceId, slug };
 }
 
+const openBoard = async (project: ReturnType<Page['locator']>) => {
+  // The localized product term may be Board or Tasks (Доска/Задачи). Follow
+  // the accessible button name instead of coupling the release gate to one
+  // editorial noun.
+  await project.getByRole('button', { name: /board|tasks|доска|задач/i }).click();
+};
+
 
 test('register -> free project -> one-time credentials', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium', 'Primary account journey runs once on desktop');
@@ -45,7 +52,7 @@ test('enterprise task board switches light/dark theme and remembers the choice',
   await page.goto('/app');
   const project = page.locator('article').filter({ hasText: slug });
   await expect(project).toBeVisible();
-  await project.getByRole('button', { name: /board|доска/i }).click();
+  await openBoard(project);
 
   const shell = page.locator('.enterprise-board-host');
   await expect(page.locator('.enterprise-board-modal')).toBeVisible();
@@ -62,7 +69,7 @@ test('enterprise task board switches light/dark theme and remembers the choice',
 
   await shell.locator('header button').last().click();
   await expect(page.locator('.enterprise-board-modal')).toHaveCount(0);
-  await project.getByRole('button', { name: /board|доска/i }).click();
+  await openBoard(project);
   await expect(page.locator('.enterprise-board-host')).toHaveClass(new RegExp(`vibe-theme-${afterTheme}`));
 });
 
