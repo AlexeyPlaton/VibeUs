@@ -5,6 +5,7 @@ import test from 'node:test';
 const app = readFileSync(new URL('./src/App.tsx', import.meta.url), 'utf8');
 const control = readFileSync(new URL('./src/pages/ControlCenterPage.tsx', import.meta.url), 'utf8');
 const radar = readFileSync(new URL('./src/pages/ProductRadarPage.tsx', import.meta.url), 'utf8');
+const radarTerms = readFileSync(new URL('./src/i18n/productRadarTerms.ts', import.meta.url), 'utf8');
 
 test('founder cockpit is separate from normal account RBAC', () => {
   assert.match(app, /path="\/control" element={<ProductRadarPage/);
@@ -38,11 +39,13 @@ test('unfinished high-risk functionality remains explicit TODO rather than fake 
 
 test('product radar puts north-star, steering queue and data confidence before vanity metrics', () => {
   assert.match(radar, /\/api\/control\/radar/);
-  assert.match(radar, /Weekly Value Workspaces/);
-  assert.match(radar, /Steering Queue/);
-  assert.match(radar, /Качество приборов/);
-  assert.match(radar, /мало данных/);
-  assert.match(radar, /Launch guardrails/);
-  assert.match(radar, /Operations Console/);
-  assert.match(radar, /Radar is read-only/);
+  assert.match(radar, /v7\.product_radar\.north_star_name/);
+  assert.match(radar, /v7\.product_radar\.steering_title/);
+  assert.match(radar, /v7\.product_radar\.instrument_quality/);
+  assert.match(radar, /v7\.product_radar\.launch_guardrails/);
+  assert.match(radar, /v7\.product_radar\.operations/);
+  assert.match(radar, /v7\.product_radar\.readonly/);
+  assert.match(radarTerms, /Weekly Value Workspaces/);
+  assert.match(radarTerms, /not enough data/);
+  assert.match(radarTerms, /Radar is read-only/);
 });
