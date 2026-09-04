@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bot, X, KanbanSquare, List, Moon, Sun } from 'lucide-react';
+import { Bot, X, KanbanSquare, List, Moon, Sun, GitBranch } from 'lucide-react';
 import { VibusWidgetUI } from './VibusWidgetUI';
 import { tr } from '../i18n/config';
 import { persistUiTheme, resolveInitialUiTheme, type UiTheme } from '../utils/uiTheme';
@@ -55,9 +55,13 @@ export const ProjectBoardModal: React.FC<ProjectBoardModalProps> = ({
     ? tr('v7.project_board.switch_to_compact')
     : tr('v7.project_board.switch_to_comfortable');
   const aiButtonLabel = tr('v7.project_board.ai_orchestration');
+  const integrationsButtonLabel = tr('v7.project_board.delivery_integrations');
 
   return (
-    <div className={`enterprise-board-host vibe-enterprise-shell vibe-theme-${appearance} vibe-density-${density} fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-0 sm:p-3 backdrop-blur-[2px] animate-in fade-in duration-150`}>
+    <div
+      data-project-slug={project.slug}
+      className={`enterprise-board-host vibe-enterprise-shell vibe-theme-${appearance} vibe-density-${density} fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-0 sm:p-3 backdrop-blur-[2px] animate-in fade-in duration-150`}
+    >
       <div className="enterprise-board-modal flex flex-col">
         <header className="enterprise-board-modal-header flex items-center justify-between px-4 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
@@ -87,6 +91,16 @@ export const ProjectBoardModal: React.FC<ProjectBoardModalProps> = ({
               data-board-ai-orchestration
             >
               <Bot className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => window.location.assign(`/app/integrations/${encodeURIComponent(project.slug)}`)}
+              className="enterprise-icon-button"
+              title={integrationsButtonLabel}
+              aria-label={integrationsButtonLabel}
+              data-board-delivery-integrations
+            >
+              <GitBranch className="h-4 w-4" />
             </button>
             <button
               type="button"

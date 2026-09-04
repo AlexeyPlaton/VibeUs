@@ -9,6 +9,7 @@ import './enterprise-dialogs.css';
 import App from './App';
 import './pages/landingpage.v8.css';
 import './i18n/config';
+import './accountTicketAiBridge';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

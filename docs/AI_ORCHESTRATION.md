@@ -8,6 +8,8 @@ The orchestration layer supports three useful paths without requiring an IDE:
 2. **GitHub agent dispatch** — VibeUs creates/synchronizes a GitHub Issue and can apply a configured dispatch label. The first built-in preset is Google Jules (`jules`).
 3. **PR delivery observation** — VibeUs follows the pull request, GitHub checks and deployment previews and can move a ticket to Review only when the existing VibeUs evidence contract is also satisfied.
 
+The authenticated project board also exposes **Work with AI / Работать с ИИ** from the current ticket. It opens the same orchestration workspace with that ticket preselected; there is no second automation engine hidden inside the ticket modal.
+
 ## Trust boundary
 
 AI orchestration does **not** weaken the existing VibeUs acceptance model.
@@ -21,6 +23,7 @@ AI orchestration does **not** weaken the existing VibeUs acceptance model.
 - CI success is an orchestration signal. It is **not** converted into a fake trusted criteria receipt.
 - Final `Review -> Accept -> done` remains a human action.
 - There is intentionally no orchestration auto-merge endpoint in this release.
+- Preview provider adapters are observation-only and never trigger a deploy or production release.
 
 ## VIBEUS-PATCH v1
 
@@ -69,6 +72,39 @@ For agents with a native repair loop, such as an enabled Jules workflow, VibeUs 
 
 This keeps costs and behavior bounded.
 
+## GitHub App credential
+
+GitHub App is now the preferred repository credential. Legacy PATs remain a migration fallback for existing projects.
+
+Configure the VibeUs server with:
+
+```text
+GITHUB_APP_ID=<numeric app id>
+GITHUB_APP_SLUG=<github app slug>
+GITHUB_APP_PRIVATE_KEY_B64=<base64 encoded RSA PEM private key>
+```
+
+The private key is a server secret and must never be exposed to browser code or committed to the repository.
+
+For each configured `owner/repo`, VibeUs asks GitHub which App installation has access to that exact repository. It does **not** trust or persist an `installation_id` supplied by the browser. VibeUs signs a short-lived RS256 App JWT, exchanges it for a repository-scoped installation token, caches that token only in process memory until shortly before expiry, and prefers it over a saved PAT.
+
+Recommended repository permissions depend on enabled features, but the hosted orchestration flow expects the minimum capabilities needed for repository contents, pull requests and issues, with checks/deployments read access when CI/preview observation is enabled. Keep the App limited to repositories the user explicitly installs it on.
+
+The Delivery Integrations page can verify the installation and, once App access is proven, remove the legacy encrypted PAT. Existing account-side GitHub Issue sync endpoints use the same App-first credential resolution so removing the PAT does not break normal project/ticket Issue sync.
+
+## Preview / deploy adapters
+
+Preview adapters deliberately separate **observation** from **deployment authority**.
+
+Current providers:
+
+- **GitHub Deployments** — default and tokenless beyond the repository credential. VibeUs finds successful deployment statuses for the PR head SHA.
+- **Vercel** — VibeUs reads deployment records and accepts only a `READY` non-production deployment whose Git metadata matches the exact PR head SHA.
+- **Render** — VibeUs reads deploy records and requires a `live` deploy for the exact PR head SHA. Because a Render service URL can be production, the project owner must also configure an explicit review/preview URL; VibeUs never guesses one.
+- **Disabled** — do not discover previews.
+
+Vercel/Render provider API tokens are encrypted at rest with the existing field-encryption contract. They are used only for provider reads in this release. There is no `/preview/deploy` endpoint and no adapter here sends a production release.
+
 ## GitHub webhook
 
 The AI Orchestration page can generate a project-specific webhook secret.
@@ -82,12 +118,6 @@ Configure the shown callback in the connected repository and use the returned se
 The endpoint validates `X-Hub-Signature-256` with constant-time HMAC comparison and also checks that the webhook repository matches the VibeUs project.
 
 The secret is encrypted at rest and is only returned in plaintext when created/rotated.
-
-## Current GitHub credential
-
-The current release still uses the project's encrypted GitHub PAT integration. Keep the token fine-grained and repository-scoped.
-
-A GitHub App is the intended next credential layer because it can provide repository selection and narrowly scoped, revocable permissions without asking users to maintain PATs. The orchestration contract is deliberately separated from credential storage so that migration does not require changing the AI workflow.
 
 ## Provider capabilities
 

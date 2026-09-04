@@ -48,7 +48,41 @@ test('orchestration policy exposes bounded repair, CI, preview and signed webhoo
   assert.match(page, /webhook_url/);
 });
 
-test('English and Russian orchestration terms remain layered symmetrically', () => {
+test('delivery integrations are account-scoped, GitHub-App first, and expose observe-only preview adapters', () => {
+  const app = read('src/App.tsx');
+  const board = read('src/components/ProjectBoardModal.tsx');
+  const page = read('src/pages/DeliveryIntegrationsPage.tsx');
+
+  assert.match(app, /\/app\/integrations\/:projectSlug/);
+  assert.match(app, /DeliveryIntegrationsPage/);
+  assert.match(board, /data-board-delivery-integrations/);
+  assert.match(page, /github\/app\/connect/);
+  assert.match(page, /github\/app\/test/);
+  assert.match(page, /github\/pat/);
+  assert.match(page, /automation\/preview/);
+  assert.match(page, /value="github"/);
+  assert.match(page, /value="vercel"/);
+  assert.match(page, /value="render"/);
+  assert.doesNotMatch(page, /preview\/deploy/);
+  assert.doesNotMatch(page, /method:\s*['"]POST['"].*deploy/);
+});
+
+test('account ticket details get a direct AI entry without changing the standalone widget bundle', () => {
+  const bridge = read('src/accountTicketAiBridge.ts');
+  const main = read('src/main.tsx');
+  const widget = read('src/widget.tsx');
+  const board = read('src/components/ProjectBoardModal.tsx');
+
+  assert.match(main, /accountTicketAiBridge/);
+  assert.doesNotMatch(widget, /accountTicketAiBridge/);
+  assert.match(board, /data-project-slug/);
+  assert.match(bridge, /dataTicketAiEntry|ticketAiEntry|data-ticket-ai-entry/i);
+  assert.match(bridge, /v7\.ticket\.work_with_ai/);
+  assert.match(bridge, /\?ticket=/);
+  assert.match(bridge, /span\.font-mono/);
+});
+
+test('English and Russian orchestration and delivery terms remain layered symmetrically', () => {
   const terms = read('src/i18n/enterpriseTerms.ts');
 
   for (const key of [
@@ -59,6 +93,11 @@ test('English and Russian orchestration terms remain layered symmetrically', () 
     'guardrail_review',
     'status_repair_blocked',
     'webhook_title',
+    'delivery_integrations',
+    'work_with_ai',
+    'github_title',
+    'preview_title',
+    'observe_only_desc',
   ]) {
     const matches = terms.match(new RegExp(`${key}:`, 'g')) || [];
     assert.equal(matches.length, 2, `${key} must exist in EN and RU enterprise layers`);

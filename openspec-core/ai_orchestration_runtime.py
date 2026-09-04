@@ -50,8 +50,6 @@ def install_ai_orchestration_runtime(module: Any) -> None:
                     else:
                         append_text(item)
             else:
-                # Current production shape: {"human-readable criterion": bool}.
-                # The key is the DoD text; the bool is only the completion claim.
                 for key, item in list(raw.items())[:100]:
                     if isinstance(item, dict):
                         append_text(
@@ -77,10 +75,6 @@ def install_ai_orchestration_runtime(module: Any) -> None:
 
     async def get_or_create_config(db: Any, project: Any) -> Any:
         config = await original_get_config(db, project)
-        # "Autopilot PR" and "Delivery" mean automatic dispatch only when the
-        # configured execution surface actually supports a server-side trigger.
-        # Web chats remain explicit handoffs because VibeUs must not pretend it
-        # can launch a browser chat on the user's behalf.
         dispatch_capable = config.agent_kind in {"jules", "github_label_agent"}
         if config.autonomy_mode in {"autopilot_pr", "delivery"} and dispatch_capable:
             config.auto_dispatch_on_handoff = True
@@ -98,10 +92,7 @@ def install_ai_orchestration_runtime(module: Any) -> None:
             )
         return payload
 
-    async def preview_url(project: Any, head_sha: str) -> Optional[str]:
-        # Preview discovery is additive. A fine-grained GitHub credential may
-        # legitimately omit Deployments read permission; that must never turn a
-        # green PR into a failed reconciliation.
+    async def github_deployment_preview(project: Any, head_sha: str) -> Optional[str]:
         try:
             deployments = await module._gh(
                 project,
@@ -127,6 +118,17 @@ def install_ai_orchestration_runtime(module: Any) -> None:
         except HTTPException:
             return None
         return None
+
+    async def preview_url(project: Any, head_sha: str) -> Optional[str]:
+        # Provider adapters are observation-only. They may discover a verified
+        # exact-SHA review deployment, but never trigger production delivery.
+        from preview_adapters import discover_preview_for_project
+
+        return await discover_preview_for_project(
+            project,
+            head_sha,
+            lambda: github_deployment_preview(project, head_sha),
+        )
 
     async def reconcile(db: Any, project: Any, ticket: Any, state: Any, config: Any) -> Any:
         if not state.github_pr_number:
@@ -172,10 +174,6 @@ def install_ai_orchestration_runtime(module: Any) -> None:
             str(run.get("conclusion") or "").lower() in failed_conclusions
             for run in runs
         )
-        # GitHub Actions reports through Check Runs. Repositories that do not use
-        # legacy commit statuses return state=pending with total_count=0; treating
-        # that empty status API as a real pending signal would keep every Actions-
-        # only PR stuck forever.
         if combined_total > 0:
             if combined_state in {"failure", "error"}:
                 failed = True
@@ -253,9 +251,6 @@ def install_ai_orchestration_runtime(module: Any) -> None:
             state.orchestration_status = "ci_green_evidence_pending"
         await db.commit()
 
-        # The persisted transition is authoritative. Board refresh is a best-effort
-        # delivery signal after commit so a transient WebSocket failure cannot
-        # roll back Review or make GitHub retry the same business transition.
         if moved_to_review:
             try:
                 import main_legacy
@@ -277,4 +272,8 @@ def install_ai_orchestration_runtime(module: Any) -> None:
     module._config_payload = config_payload
     module._preview_url = preview_url
     module._reconcile = reconcile
+
+    from integration_extensions import install_integration_extensions
+
+    install_integration_extensions(module)
     _INSTALLED = True
