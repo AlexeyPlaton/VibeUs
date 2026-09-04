@@ -111,6 +111,35 @@ def _drop_api_route(path: str, method: str) -> None:
     ]
 
 
+# The historical Operations Console still has a Post-MVP TODO tab. Most of that
+# roadmap now has real first-party implementations in /control/workbench, so the
+# legacy tab must not keep claiming those capabilities are unfinished. It now
+# shows only dependencies that would be unsafe to fake.
+_drop_api_route("/api/control/roadmap", "GET")
+
+
+@app.get('/api/control/roadmap')
+async def remaining_founder_roadmap(
+    _admin: models.User = Depends(control_router.require_platform_admin),
+):
+    return {
+        "items": [
+            {
+                "area": "Security",
+                "title": "Platform-admin passkey / MFA",
+                "description": "Blocked until VibeUs has a real WebAuthn/passkey enrollment, verification, recovery and revocation lifecycle. A UI toggle is not MFA.",
+            },
+            {
+                "area": "Revenue",
+                "title": "Provider-side refund and recurring cancellation adapters",
+                "description": "Blocked until the approved production payment provider and its exact refund/subscription/fiscal semantics are verified. Local ledger mutation is never presented as a remote refund.",
+            },
+        ],
+        "implemented_surface": "/control/workbench",
+        "implemented_capabilities_endpoint": "/api/control/founder/capabilities",
+    }
+
+
 # Existing React releases call this Stripe-shaped endpoint for the international
 # market. Keep the response contract, but route CloudPayments deployments through
 # a first-party country/business-scope step before any provider page is opened.
