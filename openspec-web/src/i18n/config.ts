@@ -8,6 +8,7 @@ import { editorialEn, editorialRu } from './editorial';
 import { terminologyEn, terminologyRu } from './terminology';
 import { engineeringTermsEn, engineeringTermsRu } from './engineeringTerms';
 import { enterpriseTermsEn, enterpriseTermsRu } from './enterpriseTerms';
+import { productRadarTermsEn, productRadarTermsRu } from './productRadarTerms';
 import { polishRussianCopy } from './russianCopy';
 
 export const SUPPORTED_UI_LOCALES = ['en', 'ru'] as const;
@@ -41,18 +42,21 @@ const enTranslation = mergeDeep(
   mergeDeep(
     mergeDeep(
       mergeDeep(
-        {
-          ...en,
-          public_feedback: v8En.public_feedback,
-          feedback: { ...((en as any).feedback || {}), ...v8En.feedback },
-        },
-        editorialEn,
+        mergeDeep(
+          {
+            ...en,
+            public_feedback: v8En.public_feedback,
+            feedback: { ...((en as any).feedback || {}), ...v8En.feedback },
+          },
+          editorialEn,
+        ),
+        terminologyEn,
       ),
-      terminologyEn,
+      engineeringTermsEn,
     ),
-    engineeringTermsEn,
+    enterpriseTermsEn,
   ),
-  enterpriseTermsEn,
+  productRadarTermsEn,
 );
 
 const ruTranslation = polishRussianCopy(
@@ -60,18 +64,21 @@ const ruTranslation = polishRussianCopy(
     mergeDeep(
       mergeDeep(
         mergeDeep(
-          {
-            ...ru,
-            public_feedback: v8Ru.public_feedback,
-            feedback: { ...((ru as any).feedback || {}), ...v8Ru.feedback },
-          },
-          editorialRu,
+          mergeDeep(
+            {
+              ...ru,
+              public_feedback: v8Ru.public_feedback,
+              feedback: { ...((ru as any).feedback || {}), ...v8Ru.feedback },
+            },
+            editorialRu,
+          ),
+          terminologyRu,
         ),
-        terminologyRu,
+        engineeringTermsRu,
       ),
-      engineeringTermsRu,
+      enterpriseTermsRu,
     ),
-    enterpriseTermsRu,
+    productRadarTermsRu,
   ) as any,
 ) as typeof ru;
 
