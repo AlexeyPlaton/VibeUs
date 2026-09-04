@@ -28,6 +28,7 @@ import billing_router
 import control_router
 import main_legacy as legacy
 import models
+import product_radar
 import schemas
 from database import get_db
 from release_invariants import human_review_transition, install_runtime_invariants
@@ -87,6 +88,7 @@ app = legacy.app
 manager = legacy.manager
 app.include_router(billing_router.router)
 app.include_router(control_router.router)
+app.include_router(product_radar.router)
 
 # Seed proxy-visible values so old imports keep working as before.
 async_session = legacy.async_session

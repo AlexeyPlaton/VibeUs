@@ -1,6 +1,10 @@
 # VibeUs Founder Control Center
 
-The founder console lives at `/control`. It is intentionally separate from the normal `/app` workspace RBAC.
+The founder cockpit lives at `/control`. It is intentionally separate from the normal `/app` workspace RBAC.
+
+`/control` is the read-only **Product Radar / Launch Cockpit**: the place to see product direction, confidence and the next steering intervention.
+
+`/control/ops` is the operational **Founder Control Center**: customers, billing ledger, promos, project inspection, audit/security and operations.
 
 ## Enable it
 
@@ -38,7 +42,95 @@ Every sensitive action writes an `admin.*` audit event with actor, target and re
 
 The console never returns project API tokens, ingest keys, provider API secrets, token pepper or field-encryption material. The public widget key is deliberately browser-visible and may be shown.
 
-## MVP surfaces
+## Product Radar / Launch Cockpit
+
+The radar is intentionally not a vanity-metric dashboard. Its job is to answer three founder questions:
+
+1. **Is the product producing real value?**
+2. **Where is the value loop leaking?**
+3. **Which intervention has priority right now?**
+
+### North Star: Weekly Value Workspaces
+
+The launch North Star is the number of distinct workspaces that captured at least one feedback item or runtime-error occurrence in the last 7 days.
+
+This is preferred over DAU/MAU during launch because a login does not prove that VibeUs delivered its core value. The metric also includes a prior-week comparison and confidence based on sample size.
+
+### Steering radar
+
+Eight steering dimensions are shown:
+
+- Reach;
+- Activate;
+- First value;
+- Return;
+- Deliver;
+- Monetize;
+- Cash & trust;
+- Learn.
+
+Radar scores are **target attainment for internal steering**, not industry benchmarks. A dimension with fewer than 10 observations is marked `insufficient` instead of producing a false red/green conclusion.
+
+Initial launch targets are explicit and intentionally revisable as real cohorts arrive. Large pivots must not be based on low-confidence samples.
+
+### Value loop
+
+The radar shows the current 7-day movement through:
+
+`signup → activated ≤24h → value workspace → captured signal → ticket → human acceptance → real payment`
+
+The units differ across steps, so this is deliberately labeled a value loop rather than a strict cohort funnel.
+
+### Steering Queue
+
+The backend converts measured signals into a bounded priority queue:
+
+- **P0** — protect money, fiscal correctness and trust before growth;
+- **P1** — repair activation, time-to-value, retention or the core delivery loop;
+- **P2** — improve evidence and distribution only after the core loop is credible;
+- **P3** — hold course and optimize one hypothesis at a time.
+
+Examples:
+
+- pending/fiscal payment issues become P0;
+- weak activation with a meaningful sample becomes P1 and explicitly advises against buying more acquisition;
+- low repeat value becomes P1 before top-of-funnel scaling;
+- falling reach only becomes a distribution problem when activation/return are already credible;
+- tiny samples become an evidence task, not a product verdict.
+
+### Launch guardrails
+
+The radar keeps product movement separate from safety/reliability constraints:
+
+- revenue integrity;
+- consent record completeness;
+- hosted VibeUs availability/latency/5xx;
+- support load;
+- live payment-provider contract readiness.
+
+Customer runtime errors are **not** treated as VibeUs platform failures. Hosted platform SLO telemetry remains a visible data gap until it is actually instrumented.
+
+Merchant/provider approval, supported geography, recurring-payment availability and fiscal contract readiness remain a **manual launch gate**. Configuration flags do not prove provider approval.
+
+### Data confidence / instrumentation map
+
+The cockpit shows how much of the steering system is actually observable. Currently measured server-side signals include signup, workspace/project creation, feedback, runtime errors, tickets, human acceptance, payments, promo redemption and legal consent versions.
+
+Visible TODO blind spots include:
+
+- landing visits and source/campaign denominator;
+- onboarding step drop-off;
+- authenticated feature usage;
+- checkout started/abandoned;
+- cancellation/churn reason;
+- support contact/SLA;
+- VibeUs platform latency/5xx/availability;
+- VibeUs deployment/release events;
+- experiment exposure/variant.
+
+Analytics should remain privacy-light: prefer bounded first-party event names and IDs, never free-form customer content simply to make founder charts richer.
+
+## MVP operational surfaces (`/control/ops`)
 
 ### Overview
 
@@ -84,7 +176,7 @@ Shows DB readiness, runtime version/environment, billing-provider enablement fla
 
 ## Post-MVP placeholders
 
-The `/control` UI deliberately exposes TODO cards, not fake buttons, for:
+The operational console deliberately exposes TODO cards, not fake buttons, for:
 
 - Customer 360 timeline;
 - internal support notes and tags;
@@ -98,5 +190,7 @@ The `/control` UI deliberately exposes TODO cards, not fake buttons, for:
 - platform-admin passkey/MFA;
 - founder shortcuts;
 - provider-side refund and recurring-cancellation adapters.
+
+The Product Radar adds explicit instrumentation TODOs alongside those feature placeholders, so the founder roadmap includes not only what to build, but also what must be measured before the next steering decision is trustworthy.
 
 These placeholders preserve the intended product contracts while preventing unfinished money/privacy/identity mutations from appearing operational.
