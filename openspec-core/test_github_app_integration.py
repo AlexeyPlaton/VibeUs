@@ -1,3 +1,4 @@
+import github_app_integration
 from main import app
 
 
@@ -28,7 +29,18 @@ def test_legacy_account_github_routes_are_migrated_to_app_first_runtime():
         assert call.__name__ == name
 
 
-def test_github_app_surface_has_no_browser_installation_id_binding_endpoint():
+def test_github_app_onboarding_uses_signed_state_and_no_browser_installation_id_binding():
     paths = {getattr(route, "path", "") for route in app.router.routes}
     assert "/api/projects/{slug}/github/app/connect" in paths
+    assert "/api/projects/{slug}/github/app/install-intent" in paths
+    assert "/api/github/app/install/complete" in paths
     assert not any("installation_id" in path for path in paths)
+    assert "installation_id" not in github_app_integration.GitHubAppInstallIntentRequest.model_fields
+    assert "installation_id" not in github_app_integration.GitHubAppInstallCompleteRequest.model_fields
+
+
+def test_github_app_onboarding_routes_are_attached_to_final_runtime():
+    intent = _call_for("/api/projects/{slug}/github/app/install-intent", "POST")
+    complete = _call_for("/api/github/app/install/complete", "POST")
+    assert intent.__module__ == "github_app_integration"
+    assert complete.__module__ == "github_app_integration"

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import json
 import logging
 import os
 import re
+import secrets
 import time
 from datetime import datetime, timezone
 from typing import Any, Optional
+from urllib.parse import quote
 
 import httpx
 from cryptography.hazmat.primitives import hashes, serialization
@@ -29,6 +33,10 @@ class GitHubAppConfigurationError(GitHubAppError):
     pass
 
 
+class GitHubAppStateError(GitHubAppError):
+    status_code = 400
+
+
 class GitHubAppRequestError(GitHubAppError):
     def __init__(self, message: str, status_code: int = 502):
         super().__init__(message)
@@ -43,6 +51,20 @@ def _config() -> tuple[str, str, str]:
     )
 
 
+def _state_secret() -> str:
+    return os.getenv("GITHUB_APP_STATE_SECRET", "").strip() or os.getenv("TOKEN_PEPPER", "").strip()
+
+
+def _setup_url() -> Optional[str]:
+    explicit = os.getenv("GITHUB_APP_SETUP_URL", "").strip()
+    if explicit:
+        return explicit if explicit.startswith(("https://", "http://")) else None
+    public_base = os.getenv("PUBLIC_BASE_URL", "").strip().rstrip("/")
+    if public_base.startswith(("https://", "http://")):
+        return f"{public_base}/app/integrations/github/callback"
+    return None
+
+
 def app_configuration() -> dict[str, Any]:
     app_id, slug, private_key_b64 = _config()
     present = [bool(app_id), bool(slug), bool(private_key_b64)]
@@ -52,6 +74,8 @@ def app_configuration() -> dict[str, Any]:
         "partial": any(present) and not configured,
         "slug": slug or None,
         "install_url": f"https://github.com/apps/{slug}/installations/new" if slug else None,
+        "setup_url": _setup_url(),
+        "state_ready": len(_state_secret()) >= 32,
     }
 
 
@@ -64,6 +88,84 @@ def _safe_repo(repo: Optional[str]) -> str:
 
 def _b64url(value: bytes) -> str:
     return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
+
+
+def _b64url_decode(value: str) -> bytes:
+    try:
+        return base64.urlsafe_b64decode((value + "=" * (-len(value) % 4)).encode("ascii"))
+    except Exception as exc:
+        raise GitHubAppStateError("GitHub App install state is malformed") from exc
+
+
+def build_install_state(
+    *,
+    project_id: str,
+    user_id: str,
+    repo: str,
+    now: Optional[int] = None,
+    ttl_seconds: int = 900,
+) -> str:
+    secret = _state_secret()
+    if len(secret) < 32:
+        raise GitHubAppConfigurationError(
+            "GitHub App onboarding requires GITHUB_APP_STATE_SECRET or TOKEN_PEPPER with at least 32 characters"
+        )
+    current = int(time.time() if now is None else now)
+    repository = _safe_repo(repo)
+    payload = {
+        "v": 1,
+        "pid": str(project_id),
+        "uid": str(user_id),
+        "repo": repository,
+        "iat": current,
+        "exp": current + max(60, min(int(ttl_seconds), 1800)),
+        "nonce": secrets.token_urlsafe(12),
+    }
+    encoded = _b64url(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8"))
+    signature = _b64url(hmac.new(secret.encode("utf-8"), encoded.encode("ascii"), hashlib.sha256).digest())
+    return f"{encoded}.{signature}"
+
+
+def parse_install_state(token: str, *, now: Optional[int] = None) -> dict[str, Any]:
+    secret = _state_secret()
+    if len(secret) < 32:
+        raise GitHubAppConfigurationError("GitHub App onboarding state verification is not configured")
+    try:
+        encoded, supplied_signature = str(token or "").split(".", 1)
+    except ValueError as exc:
+        raise GitHubAppStateError("GitHub App install state is malformed") from exc
+    expected = _b64url(hmac.new(secret.encode("utf-8"), encoded.encode("ascii"), hashlib.sha256).digest())
+    if not hmac.compare_digest(expected, supplied_signature):
+        raise GitHubAppStateError("GitHub App install state signature is invalid")
+    try:
+        payload = json.loads(_b64url_decode(encoded).decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise GitHubAppStateError("GitHub App install state is malformed") from exc
+    if not isinstance(payload, dict) or payload.get("v") != 1:
+        raise GitHubAppStateError("GitHub App install state version is not supported")
+    current = int(time.time() if now is None else now)
+    issued = int(payload.get("iat") or 0)
+    expires = int(payload.get("exp") or 0)
+    if issued <= 0 or expires <= issued or issued > current + 60:
+        raise GitHubAppStateError("GitHub App install state timestamps are invalid")
+    if expires < current or expires - issued > 1800:
+        raise GitHubAppStateError("GitHub App install state has expired")
+    project_id = str(payload.get("pid") or "").strip()
+    user_id = str(payload.get("uid") or "").strip()
+    if not project_id or not user_id:
+        raise GitHubAppStateError("GitHub App install state identity is incomplete")
+    try:
+        payload["repo"] = _safe_repo(str(payload.get("repo") or ""))
+    except GitHubAppError as exc:
+        raise GitHubAppStateError("GitHub App install state repository is invalid") from exc
+    return payload
+
+
+def install_url_for_state(state: str) -> str:
+    base = app_configuration().get("install_url")
+    if not base:
+        raise GitHubAppConfigurationError("GitHub App slug is not configured")
+    return f"{base}?state={quote(state, safe='')}"
 
 
 def build_app_jwt(*, now: Optional[int] = None) -> str:

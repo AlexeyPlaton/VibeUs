@@ -49,6 +49,26 @@ test('production examples default to the guarded CloudPayments path', () => {
   assert.match(billing, /ENABLE_CLOUDPAYMENTS=false/);
 });
 
+test('GitHub App onboarding and preview safety stay documented in public deployment templates', () => {
+  for (const file of ['.env.example', '.env.production.example', 'deploy/env.production.example']) {
+    const env = readRepo(file);
+    assert.match(env, /GITHUB_APP_ID=/);
+    assert.match(env, /GITHUB_APP_SLUG=/);
+    assert.match(env, /GITHUB_APP_PRIVATE_KEY_B64=/);
+    assert.match(env, /GITHUB_APP_STATE_SECRET=/);
+    assert.match(env, /GITHUB_APP_SETUP_URL=/);
+  }
+
+  const orchestration = readRepo('docs/AI_ORCHESTRATION.md');
+  assert.match(orchestration, /github\/app\/install-intent/);
+  assert.match(orchestration, /api\/github\/app\/install\/complete/);
+  assert.match(orchestration, /does \*\*not\*\* accept `installation_id`/i);
+  assert.match(orchestration, /automation\/preview\/deploy/);
+  assert.match(orchestration, /production_environment=false/);
+  assert.match(orchestration, /render-preview/);
+  assert.match(orchestration, /There is no preview `production`, `promote`, `release`/);
+});
+
 test('confirmed support mailbox is available across public support surfaces', () => {
   assert.match(readRepo('SECURITY.md'), /support@vibeus\.pro/);
   assert.match(readRepo('docs/B2B_INVOICE_GUIDE_RU.md'), /support@vibeus\.pro/);

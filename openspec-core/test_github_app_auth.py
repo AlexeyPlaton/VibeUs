@@ -24,6 +24,8 @@ def app_env(monkeypatch):
     monkeypatch.setenv("GITHUB_APP_ID", "12345")
     monkeypatch.setenv("GITHUB_APP_SLUG", "vibeus-test")
     monkeypatch.setenv("GITHUB_APP_PRIVATE_KEY_B64", base64.b64encode(pem).decode())
+    monkeypatch.setenv("TOKEN_PEPPER", "test_state_signing_secret_that_is_long_enough_123456")
+    monkeypatch.setenv("PUBLIC_BASE_URL", "https://vibeus.example")
     github_app_auth.reset_caches_for_tests()
     yield
     github_app_auth.reset_caches_for_tests()
@@ -41,6 +43,39 @@ def test_github_app_jwt_is_short_lived_rs256(app_env):
     assert payload["exp"] == 2_000_000_540
     assert payload["exp"] - payload["iat"] == 600
     assert signature
+
+
+def test_install_state_is_signed_short_lived_and_bound_to_identity(app_env):
+    state = github_app_auth.build_install_state(
+        project_id="project_123",
+        user_id="user_456",
+        repo="acme/shop",
+        now=2_000_000_000,
+        ttl_seconds=600,
+    )
+    payload = github_app_auth.parse_install_state(state, now=2_000_000_500)
+    assert payload["pid"] == "project_123"
+    assert payload["uid"] == "user_456"
+    assert payload["repo"] == "acme/shop"
+    assert payload["exp"] - payload["iat"] == 600
+    assert payload["nonce"]
+    assert "state=" in github_app_auth.install_url_for_state(state)
+    assert github_app_auth.app_configuration()["setup_url"] == "https://vibeus.example/app/integrations/github/callback"
+
+
+def test_install_state_rejects_tampering_and_expiry(app_env):
+    state = github_app_auth.build_install_state(
+        project_id="project_123",
+        user_id="user_456",
+        repo="acme/shop",
+        now=2_000_000_000,
+        ttl_seconds=120,
+    )
+    replacement = "A" if state[-1] != "A" else "B"
+    with pytest.raises(github_app_auth.GitHubAppStateError):
+        github_app_auth.parse_install_state(state[:-1] + replacement, now=2_000_000_010)
+    with pytest.raises(github_app_auth.GitHubAppStateError):
+        github_app_auth.parse_install_state(state, now=2_000_000_121)
 
 
 @pytest.mark.asyncio

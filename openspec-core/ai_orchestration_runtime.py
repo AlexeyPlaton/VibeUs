@@ -27,13 +27,7 @@ def _has_route(router: Any, path: str, method: str) -> bool:
 
 
 def _register_independent_routes() -> None:
-    """Register App/preview surfaces independently from the AI router lifecycle.
-
-    The historical wrapper may include ``ai_orchestration.router`` before this
-    module's idempotent runtime installer runs. Registering independent routers
-    during module import removes that ordering dependency while keeping route
-    insertion idempotent.
-    """
+    """Register App/preview surfaces independently from the AI router lifecycle."""
     import main_legacy
     from github_app_integration import router as github_app_router
     from preview_adapters import router as preview_router
@@ -51,8 +45,6 @@ def install_ai_orchestration_runtime(module: Any) -> None:
     """Install idempotent fail-closed runtime policy overrides."""
     global _INSTALLED
     if _INSTALLED:
-        # Route registration is deliberately independent from mutation-policy
-        # monkeypatching, so repeated imports still verify the effective app.
         _register_independent_routes()
         return
 
@@ -60,7 +52,6 @@ def install_ai_orchestration_runtime(module: Any) -> None:
     original_config_payload = module._config_payload
 
     def dod(ticket: Any) -> list[str]:
-        """Extract human-readable DoD from the current map shape and legacy items[]."""
         raw = getattr(ticket, "checklists", None) or {}
         result: list[str] = []
 
@@ -74,34 +65,19 @@ def install_ai_orchestration_runtime(module: Any) -> None:
             if isinstance(legacy_items, list):
                 for item in legacy_items[:100]:
                     if isinstance(item, dict):
-                        append_text(
-                            item.get("text")
-                            or item.get("title")
-                            or item.get("requirement")
-                            or item.get("label")
-                        )
+                        append_text(item.get("text") or item.get("title") or item.get("requirement") or item.get("label"))
                     else:
                         append_text(item)
             else:
                 for key, item in list(raw.items())[:100]:
                     if isinstance(item, dict):
-                        append_text(
-                            item.get("text")
-                            or item.get("title")
-                            or item.get("requirement")
-                            or key
-                        )
+                        append_text(item.get("text") or item.get("title") or item.get("requirement") or key)
                     else:
                         append_text(key)
         elif isinstance(raw, list):
             for item in raw[:100]:
                 if isinstance(item, dict):
-                    append_text(
-                        item.get("text")
-                        or item.get("title")
-                        or item.get("requirement")
-                        or item.get("label")
-                    )
+                    append_text(item.get("text") or item.get("title") or item.get("requirement") or item.get("label"))
                 else:
                     append_text(item)
         return result
@@ -126,6 +102,8 @@ def install_ai_orchestration_runtime(module: Any) -> None:
         return payload
 
     async def github_deployment_preview(project: Any, head_sha: str) -> Optional[str]:
+        from preview_adapters import github_deployment_is_safe_preview
+
         try:
             deployments = await module._gh(
                 project,
@@ -134,6 +112,8 @@ def install_ai_orchestration_runtime(module: Any) -> None:
                 params={"sha": head_sha, "per_page": 10},
             )
             for deployment in deployments or []:
+                if not github_deployment_is_safe_preview(deployment):
+                    continue
                 try:
                     statuses = await module._gh(
                         project,
@@ -153,8 +133,6 @@ def install_ai_orchestration_runtime(module: Any) -> None:
         return None
 
     async def preview_url(project: Any, head_sha: str) -> Optional[str]:
-        # Provider adapters are observation-only. They may discover a verified
-        # exact-SHA review deployment, but never trigger production delivery.
         from preview_adapters import discover_preview_for_project
 
         return await discover_preview_for_project(
@@ -203,10 +181,7 @@ def install_ai_orchestration_runtime(module: Any) -> None:
         }
 
         pending = any(run.get("status") != "completed" for run in runs)
-        failed = any(
-            str(run.get("conclusion") or "").lower() in failed_conclusions
-            for run in runs
-        )
+        failed = any(str(run.get("conclusion") or "").lower() in failed_conclusions for run in runs)
         if combined_total > 0:
             if combined_state in {"failure", "error"}:
                 failed = True
@@ -217,11 +192,7 @@ def install_ai_orchestration_runtime(module: Any) -> None:
         success = has_ci_signal and not failed and not pending
         state.last_check_summary = {
             "total": len(runs),
-            "failed": sum(
-                1
-                for run in runs
-                if str(run.get("conclusion") or "").lower() in failed_conclusions
-            ),
+            "failed": sum(1 for run in runs if str(run.get("conclusion") or "").lower() in failed_conclusions),
             "combined": combined_state if combined_total > 0 else "none",
             "combined_total": combined_total,
             "head_sha": head_sha,
