@@ -23,6 +23,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import ai_orchestration
 import auth
 import billing_router
 import main_legacy as legacy
@@ -85,6 +86,7 @@ install_runtime_invariants()
 app = legacy.app
 manager = legacy.manager
 app.include_router(billing_router.router)
+app.include_router(ai_orchestration.router)
 
 # Seed proxy-visible values so old imports keep working as before.
 async_session = legacy.async_session

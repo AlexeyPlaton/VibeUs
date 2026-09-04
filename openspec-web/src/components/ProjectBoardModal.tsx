@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, KanbanSquare, List, Moon, Sun } from 'lucide-react';
+import { Bot, X, KanbanSquare, List, Moon, Sun } from 'lucide-react';
 import { VibusWidgetUI } from './VibusWidgetUI';
 import { tr } from '../i18n/config';
 import { persistUiTheme, resolveInitialUiTheme, type UiTheme } from '../utils/uiTheme';
@@ -54,6 +54,7 @@ export const ProjectBoardModal: React.FC<ProjectBoardModalProps> = ({
   const densityButtonLabel = density === 'comfortable'
     ? tr('v7.project_board.switch_to_compact')
     : tr('v7.project_board.switch_to_comfortable');
+  const aiButtonLabel = tr('v7.project_board.ai_orchestration');
 
   return (
     <div className={`enterprise-board-host vibe-enterprise-shell vibe-theme-${appearance} vibe-density-${density} fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-0 sm:p-3 backdrop-blur-[2px] animate-in fade-in duration-150`}>
@@ -77,6 +78,16 @@ export const ProjectBoardModal: React.FC<ProjectBoardModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.location.assign(`/app/ai/${encodeURIComponent(project.slug)}`)}
+              className="enterprise-icon-button"
+              title={aiButtonLabel}
+              aria-label={aiButtonLabel}
+              data-board-ai-orchestration
+            >
+              <Bot className="h-4 w-4" />
+            </button>
             <button
               type="button"
               onClick={toggleDensity}
