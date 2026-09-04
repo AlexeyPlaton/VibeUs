@@ -20,15 +20,42 @@ test('enterprise board defines shared light and dark design tokens', () => {
   assert.match(css, /prefers-reduced-motion/);
 });
 
-test('authenticated project board is a full workspace with persistent theme switch', () => {
+test('authenticated project board persists both theme and information density', () => {
   const modal = read('src/components/ProjectBoardModal.tsx');
   assert.match(modal, /vibus_board_theme/);
+  assert.match(modal, /vibus_board_density/);
   assert.match(modal, /prefers-color-scheme:\s*dark/);
   assert.match(modal, /vibe-enterprise-shell/);
   assert.match(modal, /vibe-theme-\$\{appearance\}/);
+  assert.match(modal, /vibe-density-\$\{density\}/);
   assert.match(modal, /theme=\{appearance\}/);
   assert.match(modal, /switch_to_light/);
   assert.match(modal, /switch_to_dark/);
+  assert.match(modal, /switch_to_compact/);
+  assert.match(modal, /switch_to_comfortable/);
+});
+
+test('board UX layer uses semantic column selectors and compact density', () => {
+  const css = read('src/enterprise-board-ux.css');
+  const column = read('src/components/widget/ui/KanbanColumn.tsx');
+  assert.match(column, /data-board-column=\{col\.id\}/);
+  assert.match(css, /\[data-board-column\]/);
+  assert.match(css, /\.vibe-density-compact/);
+  assert.match(css, /scroll-snap-type:\s*x/);
+  assert.match(css, /scrollbar-gutter:\s*stable/);
+  assert.doesNotMatch(css, /div\[class\*="w-80 flex flex-col h-full"\]/);
+});
+
+test('board search supports keyboard focus and filter-aware empty states', () => {
+  const board = read('src/components/widget/ui/BoardView.tsx');
+  const column = read('src/components/widget/ui/KanbanColumn.tsx');
+  assert.match(board, /searchInputRef/);
+  assert.match(board, /event\.key === '\/'/);
+  assert.match(board, /event\.ctrlKey \|\| event\.metaKey/);
+  assert.match(board, /v7\.board\.clear_filters/);
+  assert.match(board, /v7\.board\.results/);
+  assert.match(column, /isFiltering/);
+  assert.match(column, /v7\.kanban\.no_matches/);
 });
 
 test('standalone widget supports auto light-dark theming without hard-coded dark root', () => {
@@ -38,6 +65,9 @@ test('standalone widget supports auto light-dark theming without hard-coded dark
   assert.match(widget, /prefers-color-scheme:\s*dark/);
   assert.match(widget, /data-vibus-root/);
   assert.match(widget, /data-vibus-style/);
+  assert.match(widget, /enterprise-board-ux\.css/);
+  assert.match(widget, /VibeusWidgetAlias/);
+  assert.match(widget, /autoMountWidget/);
   assert.doesNotMatch(widget, /vibus-widget-root dark['"]/);
 });
 
@@ -67,11 +97,12 @@ test('light theme also covers board dialogs and form controls', () => {
   assert.match(dialogs, /background-color:\s*var\(--vb-canvas-subtle\)/);
 });
 
-test('enterprise board and dialog stylesheets are loaded in app and widget builds', () => {
+test('enterprise board stylesheets are loaded in app and widget builds', () => {
   const main = read('src/main.tsx');
   const widget = read('src/widget.tsx');
   for (const source of [main, widget]) {
     assert.match(source, /enterprise-board\.css/);
+    assert.match(source, /enterprise-board-ux\.css/);
     assert.match(source, /enterprise-dialogs\.css/);
   }
 });
