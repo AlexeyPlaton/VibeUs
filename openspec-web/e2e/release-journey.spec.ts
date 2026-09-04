@@ -105,6 +105,27 @@ test('enterprise account and task board share theme, density and keyboard search
 });
 
 
+test('delivery integrations and AI orchestration are first-party account flows', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Delivery flow runs once on desktop');
+  const { slug } = await registerAndCreateFreeProject(page);
+
+  await page.goto(`/app/integrations/${encodeURIComponent(slug)}`);
+  await expect(page.locator('[data-github-app-integration]')).toBeVisible();
+  await expect(page.locator('[data-github-onboarding]')).toBeVisible();
+  await expect(page.locator('[data-preview-adapters]')).toBeVisible();
+
+  await page.goto(`/app/ai/${encodeURIComponent(slug)}`);
+  const flow = page.locator('[data-ai-delivery-flow]');
+  await expect(flow).toBeVisible();
+  for (const step of ['task', 'handoff', 'pr', 'ci', 'preview']) {
+    await expect(flow.locator(`[data-ai-flow-step="${step}"]`)).toBeVisible();
+  }
+
+  await page.goto('/app/integrations/github/callback');
+  await expect(page.locator('[data-github-app-callback]')).toBeVisible();
+});
+
+
 test('international checkout requires country and blocks current EEA/UK scope', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium', 'Billing decision flow runs once on desktop');
   const { workspaceId } = await registerAndCreateFreeProject(page);
