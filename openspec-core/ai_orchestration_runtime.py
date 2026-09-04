@@ -17,10 +17,43 @@ _INSTALLED = False
 logger = logging.getLogger("vibeus.ai_orchestration")
 
 
+def _has_route(router: Any, path: str, method: str) -> bool:
+    target = method.upper()
+    return any(
+        getattr(route, "path", None) == path
+        and target in (getattr(route, "methods", None) or set())
+        for route in router.routes
+    )
+
+
+def _register_independent_routes() -> None:
+    """Register App/preview surfaces independently from the AI router lifecycle.
+
+    The historical wrapper may include ``ai_orchestration.router`` before this
+    module's idempotent runtime installer runs. Registering independent routers
+    during module import removes that ordering dependency while keeping route
+    insertion idempotent.
+    """
+    import main_legacy
+    from github_app_integration import router as github_app_router
+    from preview_adapters import router as preview_router
+
+    if not _has_route(main_legacy.app.router, "/api/projects/{slug}/github/app", "GET"):
+        main_legacy.app.include_router(github_app_router)
+    if not _has_route(main_legacy.app.router, "/api/projects/{slug}/automation/preview", "GET"):
+        main_legacy.app.include_router(preview_router)
+
+
+_register_independent_routes()
+
+
 def install_ai_orchestration_runtime(module: Any) -> None:
     """Install idempotent fail-closed runtime policy overrides."""
     global _INSTALLED
     if _INSTALLED:
+        # Route registration is deliberately independent from mutation-policy
+        # monkeypatching, so repeated imports still verify the effective app.
+        _register_independent_routes()
         return
 
     original_get_config = module._get_or_create_config
