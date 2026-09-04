@@ -325,8 +325,11 @@ async def test_overview_operations_and_roadmap_are_read_only_admin_surfaces(clie
 
     roadmap = await client.get("/api/control/roadmap", headers=admin["headers"])
     assert roadmap.status_code == 200
-    titles = {item["title"] for item in roadmap.json()["items"]}
-    assert "Customer 360 timeline" in titles
-    assert "Payment reconciliation" in titles
-    assert "Feature flags" in titles
-    assert "Provider-side refund and cancellation adapters" in titles
+    payload = roadmap.json()
+    assert payload["implemented_surface"] == "/control/workbench"
+    assert payload["implemented_capabilities_endpoint"] == "/api/control/founder/capabilities"
+    titles = {item["title"] for item in payload["items"]}
+    assert titles == {
+        "Platform-admin passkey / MFA",
+        "Provider-side refund and recurring cancellation adapters",
+    }
