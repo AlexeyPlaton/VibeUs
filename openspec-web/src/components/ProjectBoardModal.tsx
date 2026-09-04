@@ -2,19 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { X, KanbanSquare, List, Moon, Sun } from 'lucide-react';
 import { VibusWidgetUI } from './VibusWidgetUI';
 import { tr } from '../i18n/config';
+import { persistUiTheme, resolveInitialUiTheme, type UiTheme } from '../utils/uiTheme';
 
-type BoardTheme = 'light' | 'dark';
 type BoardDensity = 'comfortable' | 'compact';
 
-const BOARD_THEME_STORAGE_KEY = 'vibus_board_theme';
 const BOARD_DENSITY_STORAGE_KEY = 'vibus_board_density';
-
-function resolveInitialTheme(): BoardTheme {
-  if (typeof window === 'undefined') return 'dark';
-  const saved = window.localStorage.getItem(BOARD_THEME_STORAGE_KEY);
-  if (saved === 'light' || saved === 'dark') return saved;
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
 
 function resolveInitialDensity(): BoardDensity {
   if (typeof window === 'undefined') return 'comfortable';
@@ -39,13 +31,11 @@ export const ProjectBoardModal: React.FC<ProjectBoardModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const [appearance, setAppearance] = useState<BoardTheme>(resolveInitialTheme);
+  const [appearance, setAppearance] = useState<UiTheme>(resolveInitialUiTheme);
   const [density, setDensity] = useState<BoardDensity>(resolveInitialDensity);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(BOARD_THEME_STORAGE_KEY, appearance);
-    }
+    persistUiTheme(appearance);
   }, [appearance]);
 
   useEffect(() => {

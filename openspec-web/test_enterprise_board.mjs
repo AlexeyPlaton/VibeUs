@@ -20,11 +20,26 @@ test('enterprise board defines shared light and dark design tokens', () => {
   assert.match(css, /prefers-reduced-motion/);
 });
 
-test('authenticated project board persists both theme and information density', () => {
+test('account and board share one persisted UI theme contract', () => {
+  const theme = read('src/utils/uiTheme.ts');
+  const frame = read('src/components/EnterpriseDashboardFrame.tsx');
   const modal = read('src/components/ProjectBoardModal.tsx');
-  assert.match(modal, /vibus_board_theme/);
+  assert.match(theme, /vibus_ui_theme/);
+  assert.match(theme, /vibus_board_theme/);
+  assert.match(theme, /prefers-color-scheme:\s*dark/);
+  assert.match(theme, /vibeus:ui-theme-change/);
+  assert.match(theme, /window\.dispatchEvent/);
+  assert.match(frame, /enterprise-dashboard-shell/);
+  assert.match(frame, /persistUiTheme/);
+  assert.match(frame, /subscribeUiTheme/);
+  assert.match(frame, /data-dashboard-theme-toggle/);
+  assert.match(modal, /persistUiTheme\(appearance\)/);
+  assert.match(modal, /resolveInitialUiTheme/);
+});
+
+test('authenticated project board persists information density independently', () => {
+  const modal = read('src/components/ProjectBoardModal.tsx');
   assert.match(modal, /vibus_board_density/);
-  assert.match(modal, /prefers-color-scheme:\s*dark/);
   assert.match(modal, /vibe-enterprise-shell/);
   assert.match(modal, /vibe-theme-\$\{appearance\}/);
   assert.match(modal, /vibe-density-\$\{density\}/);
@@ -97,7 +112,24 @@ test('light theme also covers board dialogs and form controls', () => {
   assert.match(dialogs, /background-color:\s*var\(--vb-canvas-subtle\)/);
 });
 
-test('enterprise board stylesheets are loaded in app and widget builds', () => {
+test('dashboard maps legacy dark surfaces to semantic enterprise tokens', () => {
+  const app = read('src/App.tsx');
+  const main = read('src/main.tsx');
+  const css = read('src/enterprise-dashboard.css');
+  assert.match(app, /EnterpriseDashboardFrame/);
+  assert.match(main, /enterprise-dashboard\.css/);
+  assert.match(css, /enterprise-dashboard-shell/);
+  assert.match(css, /var\(--vb-canvas\)/);
+  assert.match(css, /var\(--vb-surface\)/);
+  assert.match(css, /var\(--vb-border\)/);
+  assert.match(css, /bg-white\/\[/);
+  assert.match(css, /bg-black\//);
+  assert.match(css, /enterprise-dashboard-theme-toggle/);
+  assert.match(css, /focus-visible/);
+  assert.match(css, /prefers-reduced-motion/);
+});
+
+test('enterprise stylesheets are loaded without breaking standalone widget lifecycle', () => {
   const main = read('src/main.tsx');
   const widget = read('src/widget.tsx');
   for (const source of [main, widget]) {
@@ -105,4 +137,6 @@ test('enterprise board stylesheets are loaded in app and widget builds', () => {
     assert.match(source, /enterprise-board-ux\.css/);
     assert.match(source, /enterprise-dialogs\.css/);
   }
+  assert.match(main, /enterprise-dashboard\.css/);
+  assert.doesNotMatch(widget, /enterprise-dashboard\.css/);
 });

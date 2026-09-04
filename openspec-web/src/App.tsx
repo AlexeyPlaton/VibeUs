@@ -4,6 +4,7 @@ import { CreateProjectPage } from './pages/CreateProjectPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { InternationalCheckoutPage } from './pages/InternationalCheckoutPage';
 import { LegalPage } from './pages/legalpage';
+import { EnterpriseDashboardFrame } from './components/EnterpriseDashboardFrame';
 import './index.css';
 
 function App() {
@@ -12,7 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/create" element={<CreateProjectPage />} />
-        <Route path="/app" element={<DashboardPage />} />
+        <Route path="/app" element={<EnterpriseDashboardFrame><DashboardPage /></EnterpriseDashboardFrame>} />
         <Route path="/billing/international" element={<InternationalCheckoutPage />} />
         <Route path="/legal/:doc" element={<LegalPage />} />
       </Routes>

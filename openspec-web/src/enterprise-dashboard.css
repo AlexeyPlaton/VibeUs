@@ -1,0 +1,183 @@
+/*
+ * Account workspace theme bridge.
+ * The existing dashboard keeps its business/UI structure while this layer maps
+ * legacy dark-only utility surfaces onto the same semantic tokens as the board.
+ */
+
+.enterprise-dashboard-shell {
+  min-height: 100vh;
+  background: var(--vb-canvas);
+  color: var(--vb-text);
+  color-scheme: light;
+}
+
+.enterprise-dashboard-shell.vibe-theme-dark {
+  color-scheme: dark;
+}
+
+.enterprise-dashboard-content,
+.enterprise-dashboard-content > .min-h-screen {
+  min-height: 100vh;
+  background: var(--vb-canvas) !important;
+  color: var(--vb-text) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen > header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  border-color: var(--vb-border) !important;
+  background: color-mix(in srgb, var(--vb-canvas) 88%, transparent) !important;
+  color: var(--vb-text) !important;
+  backdrop-filter: blur(14px);
+}
+
+.enterprise-dashboard-content > .min-h-screen > main {
+  color: var(--vb-text);
+}
+
+.enterprise-dashboard-content > .min-h-screen :where([class*="border-white/"]):not(.enterprise-board-host, .enterprise-board-host *),
+.enterprise-dashboard-content > .min-h-screen :where([class*="border-slate"]):not(.enterprise-board-host, .enterprise-board-host *) {
+  border-color: var(--vb-border) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where([class*="bg-white/["]):not(.enterprise-board-host, .enterprise-board-host *) {
+  background: var(--vb-surface) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035);
+}
+
+.enterprise-dashboard-content > .min-h-screen :where([class*="bg-black/"]):not(.enterprise-board-host, .enterprise-board-host *) {
+  background: var(--vb-canvas-subtle) !important;
+  box-shadow: inset 0 0 0 1px var(--vb-border);
+}
+
+.enterprise-dashboard-content > .min-h-screen :where([class*="bg-slate-950"]):not(.enterprise-board-host, .enterprise-board-host *),
+.enterprise-dashboard-content > .min-h-screen :where([class*="bg-slate-900"]):not(.enterprise-board-host, .enterprise-board-host *) {
+  background-color: var(--vb-canvas-subtle) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where(section[class*="bg-gradient-to-br"]):not(.enterprise-board-host, .enterprise-board-host *) {
+  background: linear-gradient(
+    135deg,
+    var(--vb-surface),
+    color-mix(in srgb, var(--vb-accent-soft) 46%, var(--vb-surface))
+  ) !important;
+  border-color: var(--vb-border) !important;
+  box-shadow: none !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where([class~="text-white"], [class~="text-slate-100"], [class~="text-slate-200"]):not(.enterprise-board-host, .enterprise-board-host *) {
+  color: var(--vb-text) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where([class~="text-slate-300"]):not(.enterprise-board-host, .enterprise-board-host *) {
+  color: var(--vb-text-secondary) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where([class~="text-slate-400"], [class~="text-slate-500"]):not(.enterprise-board-host, .enterprise-board-host *) {
+  color: var(--vb-muted) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where([class~="text-slate-600"]):not(.enterprise-board-host, .enterprise-board-host *) {
+  color: var(--vb-faint) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where([class*="text-indigo-100"]):not(.enterprise-board-host, .enterprise-board-host *) {
+  color: var(--vb-text-secondary) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where(input, select, textarea):not(.enterprise-board-host *) {
+  border-color: var(--vb-border) !important;
+  background: var(--vb-canvas-subtle) !important;
+  color: var(--vb-text) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where(input, textarea):not(.enterprise-board-host *)::placeholder {
+  color: var(--vb-faint) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where(option):not(.enterprise-board-host *) {
+  background: var(--vb-surface) !important;
+  color: var(--vb-text) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where(button, a)[class*="bg-white"]:not(.enterprise-board-host, .enterprise-board-host *) {
+  border-color: transparent !important;
+  background: var(--vb-text) !important;
+  color: var(--vb-canvas) !important;
+  box-shadow: none !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where(button, a)[class*="bg-white"]:not(.enterprise-board-host, .enterprise-board-host *):hover {
+  opacity: 0.9;
+}
+
+.enterprise-dashboard-content > .min-h-screen :where(article, section, div)[class*="rounded-3xl"][class*="border"]:not(.enterprise-board-host, .enterprise-board-host *) {
+  box-shadow: none;
+}
+
+.enterprise-dashboard-content > .min-h-screen article[class*="bg-white/["] {
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.enterprise-dashboard-content > .min-h-screen article[class*="bg-white/["]:hover {
+  border-color: var(--vb-border-strong) !important;
+  background: var(--vb-surface-raised) !important;
+}
+
+.enterprise-dashboard-content > .min-h-screen code:not(.enterprise-board-host code) {
+  color: var(--vb-text-secondary);
+}
+
+.enterprise-dashboard-theme-toggle {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--vb-border);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--vb-surface) 94%, transparent);
+  color: var(--vb-text-secondary);
+  box-shadow: var(--vb-shadow);
+  backdrop-filter: blur(12px);
+  transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.enterprise-dashboard-theme-toggle:hover {
+  border-color: var(--vb-border-strong);
+  background: var(--vb-surface-raised);
+  color: var(--vb-text);
+  transform: translateY(-1px);
+}
+
+.enterprise-dashboard-theme-toggle:focus-visible {
+  outline: 2px solid var(--vb-accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .enterprise-dashboard-content > .min-h-screen > main {
+    padding-bottom: 76px;
+  }
+
+  .enterprise-dashboard-theme-toggle {
+    right: 14px;
+    bottom: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enterprise-dashboard-theme-toggle,
+  .enterprise-dashboard-content > .min-h-screen article[class*="bg-white/[" ] {
+    transition: none !important;
+  }
+
+  .enterprise-dashboard-theme-toggle:hover {
+    transform: none;
+  }
+}

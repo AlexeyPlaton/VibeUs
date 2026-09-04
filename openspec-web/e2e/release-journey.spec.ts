@@ -45,18 +45,29 @@ test('register -> free project -> one-time credentials', async ({ page }, testIn
 });
 
 
-test('enterprise task board persists theme and density and supports keyboard search', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'chromium', 'Enterprise board journey runs once on desktop');
+test('enterprise account and task board share theme, density and keyboard search', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Enterprise account journey runs once on desktop');
   const { slug } = await registerAndCreateFreeProject(page);
 
   await page.goto('/app');
+  const dashboard = page.locator('.enterprise-dashboard-shell');
+  await expect(dashboard).toHaveClass(/vibe-theme-(?:light|dark)/);
+
+  const dashboardBefore = await dashboard.getAttribute('class');
+  const dashboardBeforeTheme = dashboardBefore?.includes('vibe-theme-light') ? 'light' : 'dark';
+  const dashboardTheme = dashboardBeforeTheme === 'light' ? 'dark' : 'light';
+  await dashboard.locator('[data-dashboard-theme-toggle]').click();
+  await expect(dashboard).toHaveClass(new RegExp(`vibe-theme-${dashboardTheme}`));
+  await expect.poll(async () => page.evaluate(() => localStorage.getItem('vibus_ui_theme'))).toBe(dashboardTheme);
+  await expect.poll(async () => page.evaluate(() => localStorage.getItem('vibus_board_theme'))).toBe(dashboardTheme);
+
   const project = page.locator('article').filter({ hasText: slug });
   await expect(project).toBeVisible();
   await openBoard(project);
 
   const shell = page.locator('.enterprise-board-host');
   await expect(page.locator('.enterprise-board-modal')).toBeVisible();
-  await expect(shell).toHaveClass(/vibe-theme-(?:light|dark)/);
+  await expect(shell).toHaveClass(new RegExp(`vibe-theme-${dashboardTheme}`));
   await expect(shell).toHaveClass(/vibe-density-(?:comfortable|compact)/);
   await expect(page.locator('.enterprise-board-stage .spatial-kanban')).toBeVisible();
 
@@ -68,6 +79,8 @@ test('enterprise task board persists theme and density and supports keyboard sea
 
   await shell.getByRole('button', { name: /light theme|dark theme|светл|т[её]мн/i }).click();
   await expect(shell).toHaveClass(new RegExp(`vibe-theme-${afterTheme}`));
+  await expect(dashboard).toHaveClass(new RegExp(`vibe-theme-${afterTheme}`));
+  await expect.poll(async () => page.evaluate(() => localStorage.getItem('vibus_ui_theme'))).toBe(afterTheme);
   await expect.poll(async () => page.evaluate(() => localStorage.getItem('vibus_board_theme'))).toBe(afterTheme);
 
   await shell.getByRole('button', { name: /compact density|comfortable density|компакт|свободн/i }).click();
@@ -84,6 +97,7 @@ test('enterprise task board persists theme and density and supports keyboard sea
 
   await shell.getByRole('button', { name: /close board|закрыть доску/i }).click();
   await expect(page.locator('.enterprise-board-modal')).toHaveCount(0);
+  await expect(dashboard).toHaveClass(new RegExp(`vibe-theme-${afterTheme}`));
   await openBoard(project);
   const reopenedShell = page.locator('.enterprise-board-host');
   await expect(reopenedShell).toHaveClass(new RegExp(`vibe-theme-${afterTheme}`));
