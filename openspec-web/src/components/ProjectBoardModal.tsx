@@ -1,17 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { X, KanbanSquare, Moon, Sun } from 'lucide-react';
+import { X, KanbanSquare, List, Moon, Sun } from 'lucide-react';
 import { VibusWidgetUI } from './VibusWidgetUI';
 import { tr } from '../i18n/config';
 
 type BoardTheme = 'light' | 'dark';
+type BoardDensity = 'comfortable' | 'compact';
 
 const BOARD_THEME_STORAGE_KEY = 'vibus_board_theme';
+const BOARD_DENSITY_STORAGE_KEY = 'vibus_board_density';
 
 function resolveInitialTheme(): BoardTheme {
   if (typeof window === 'undefined') return 'dark';
   const saved = window.localStorage.getItem(BOARD_THEME_STORAGE_KEY);
   if (saved === 'light' || saved === 'dark') return saved;
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function resolveInitialDensity(): BoardDensity {
+  if (typeof window === 'undefined') return 'comfortable';
+  return window.localStorage.getItem(BOARD_DENSITY_STORAGE_KEY) === 'compact' ? 'compact' : 'comfortable';
 }
 
 interface ProjectBoardModalProps {
@@ -33,6 +40,7 @@ export const ProjectBoardModal: React.FC<ProjectBoardModalProps> = ({
   onClose,
 }) => {
   const [appearance, setAppearance] = useState<BoardTheme>(resolveInitialTheme);
+  const [density, setDensity] = useState<BoardDensity>(resolveInitialDensity);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -40,15 +48,25 @@ export const ProjectBoardModal: React.FC<ProjectBoardModalProps> = ({
     }
   }, [appearance]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(BOARD_DENSITY_STORAGE_KEY, density);
+    }
+  }, [density]);
+
   if (!isOpen) return null;
 
   const toggleAppearance = () => setAppearance((current) => current === 'dark' ? 'light' : 'dark');
+  const toggleDensity = () => setDensity((current) => current === 'comfortable' ? 'compact' : 'comfortable');
   const themeButtonLabel = appearance === 'dark'
     ? tr('v7.project_board.switch_to_light')
     : tr('v7.project_board.switch_to_dark');
+  const densityButtonLabel = density === 'comfortable'
+    ? tr('v7.project_board.switch_to_compact')
+    : tr('v7.project_board.switch_to_comfortable');
 
   return (
-    <div className={`enterprise-board-host vibe-enterprise-shell vibe-theme-${appearance} fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-0 sm:p-3 backdrop-blur-[2px] animate-in fade-in duration-150`}>
+    <div className={`enterprise-board-host vibe-enterprise-shell vibe-theme-${appearance} vibe-density-${density} fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-0 sm:p-3 backdrop-blur-[2px] animate-in fade-in duration-150`}>
       <div className="enterprise-board-modal flex flex-col">
         <header className="enterprise-board-modal-header flex items-center justify-between px-4 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
@@ -69,6 +87,16 @@ export const ProjectBoardModal: React.FC<ProjectBoardModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleDensity}
+              className="enterprise-icon-button"
+              title={densityButtonLabel}
+              aria-label={densityButtonLabel}
+              data-board-density={density}
+            >
+              <List className="h-4 w-4" />
+            </button>
             <button
               type="button"
               onClick={toggleAppearance}
