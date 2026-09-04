@@ -289,40 +289,22 @@ async def test_billing_and_promo_redemption(async_client: AsyncClient):
     ws_id = ws["id"]
     assert ws["is_lifetime_free"] is False
 
-    # 2. Test Checkout Session creation
+    # 2. The legacy checkout-shaped endpoint now performs the first-party
+    # CloudPayments billing-country/business-use handoff. Entitlements are
+    # granted only by verified provider notifications, covered by the dedicated
+    # CloudPayments webhook tests.
     checkout_res = await async_client.post("/api/billing/create-checkout-session", json={
         "workspace_id": ws_id,
         "tier": "solo"
     }, headers=headers)
     assert checkout_res.status_code == 200
-    assert "checkout_url" in checkout_res.json()
-    checkout_session_id = checkout_res.json()["session_id"]
+    checkout = checkout_res.json()
+    assert checkout["provider"] == "cloudpayments"
+    assert checkout["requires_billing_details"] is True
+    assert "/billing/international?" in checkout["checkout_url"]
+    assert f"workspace={ws_id}" in checkout["checkout_url"]
 
-    # 3. A successful checkout grants a time-bounded entitlement.
-    webhook_res = await async_client.post(
-        "/api/billing/webhook",
-        content=json.dumps({
-            "type": "checkout.session.completed",
-            "data": {
-                "object": {
-                    "id": checkout_session_id,
-                    "payment_status": "paid",
-                    "amount_total": pricing.amount_minor("global", "solo"),
-                    "currency": "usd",
-                    "customer": "cus_stripe_12345",
-                }
-            }
-        }),
-        headers={"Content-Type": "application/json"},
-    )
-    assert webhook_res.status_code == 200
-    assert webhook_res.json()["status"] == "processed"
-
-    paid_ws = await async_client.get(f"/api/workspaces/{ws_id}", headers=headers)
-    assert paid_ws.json()["subscription_status"] == "active"
-    assert paid_ws.json()["current_period_end"] is not None
-
-    # 4. Redeem Promo Code (LAUNCH_VIP_2026) -> Upgrades to Lifetime Solo
+    # 3. Redeem Promo Code (LAUNCH_VIP_2026) -> Upgrades to Lifetime Solo
     async with TestingSessionLocal() as db:
         db.add(models.PromoCode(
             code_digest=security.hash_access_token("LAUNCH_VIP_2026"),
