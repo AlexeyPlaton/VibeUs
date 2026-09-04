@@ -637,11 +637,21 @@ async def test_runtime_error_bridge_ingest_dedup_reopen_and_rotation(client: Asy
     assert data2["occurrences_count"] == 2
     assert data2["is_regression"] is False
 
-    # 6. Close the ticket (Done)
-    close_res = await client.put(
-        f"/api/projects/crash-app/tickets/{ticket_id}",
-        json={"status": "done"},
-        headers=headers
+    # 6. Put the ticket in review, then close it through the authenticated human
+    # review endpoint. Review eligibility itself is covered by the criteria gates;
+    # this test specifically needs a legitimately accepted ticket to verify that
+    # a later runtime occurrence reopens it as a regression.
+    async with TestingSessionLocal() as db:
+        ticket = (await db.execute(
+            select(models.SpecTicket).where(models.SpecTicket.id == ticket_id)
+        )).scalar_one()
+        ticket.status = "review"
+        await db.commit()
+
+    close_res = await client.post(
+        f"/api/projects/crash-app/tickets/{ticket_id}/review",
+        json={"action": "accept", "rework_notes": ""},
+        headers=headers,
     )
     assert close_res.status_code == 200, close_res.text
     assert close_res.json()["status"] == "done"
@@ -1228,4 +1238,3 @@ async def test_operator_receipt_cli_rejects_non_succeeded_or_non_npd_payments(cl
             await manage_receipts.mark_receipt_issued(db, pending.id, official)
         with pytest.raises(ValueError, match="tax_mode=npd"):
             await manage_receipts.mark_receipt_issued(db, kkt.id, official)
-
