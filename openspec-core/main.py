@@ -261,10 +261,15 @@ async def update_project_error_status(
 # orchestration API under module-collection/import-order edge cases.
 import ai_orchestration as _ai_orchestration
 from ai_orchestration_runtime import install_ai_orchestration_runtime
+from github_app_integration import router as _github_app_router
+from preview_adapters import router as _preview_router
 
 install_ai_orchestration_runtime(_ai_orchestration)
 
 _AI_OVERVIEW_PATH = "/api/projects/{slug}/automation/overview"
+_GITHUB_APP_PATH = "/api/projects/{slug}/github/app"
+_PREVIEW_CONFIG_PATH = "/api/projects/{slug}/automation/preview"
+
 if not _ai_orchestration.router.routes:
     raise RuntimeError("AI orchestration router is empty")
 if not any(getattr(route, "path", None) == _AI_OVERVIEW_PATH for route in app.router.routes):
@@ -273,6 +278,18 @@ if not any(getattr(route, "path", None) == _AI_OVERVIEW_PATH for route in app.ro
     app.router.routes.extend(_ai_orchestration.router.routes)
 if not any(getattr(route, "path", None) == _AI_OVERVIEW_PATH for route in app.router.routes):
     raise RuntimeError("AI orchestration routes were not registered")
+
+# Independent delivery-integration routers must be attached to the final wrapper
+# app, not merely to the already-included AI router. This keeps startup correct
+# under import-order/test-collection variations and fails closed if wiring drifts.
+if not any(getattr(route, "path", None) == _GITHUB_APP_PATH for route in app.router.routes):
+    app.include_router(_github_app_router)
+if not any(getattr(route, "path", None) == _PREVIEW_CONFIG_PATH for route in app.router.routes):
+    app.include_router(_preview_router)
+if not any(getattr(route, "path", None) == _GITHUB_APP_PATH for route in app.router.routes):
+    raise RuntimeError("GitHub App integration routes were not registered")
+if not any(getattr(route, "path", None) == _PREVIEW_CONFIG_PATH for route in app.router.routes):
+    raise RuntimeError("Preview integration routes were not registered")
 
 settings = legacy.settings
 lifespan = legacy.lifespan
