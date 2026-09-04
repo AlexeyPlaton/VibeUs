@@ -7,12 +7,14 @@ to regression-test without calling a real GitHub account.
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Optional
 
 from fastapi import HTTPException, Request
 
 
 _INSTALLED = False
+logger = logging.getLogger("vibeus.ai_orchestration")
 
 
 def install_ai_orchestration_runtime(module: Any) -> None:
@@ -224,11 +226,13 @@ def install_ai_orchestration_runtime(module: Any) -> None:
             "vibeus_evidence_ready": ready,
             "missing_evidence": missing,
         }
+        moved_to_review = False
         if ready and config.auto_move_to_review and ticket.status not in {"review", "done"}:
             ticket.status = "review"
             ticket.revision = int(ticket.revision or 0) + 1
             project.revision = int(project.revision or 0) + 1
             state.orchestration_status = "review_ready"
+            moved_to_review = True
             db.add(
                 module.models.AuditEvent(
                     workspace_id=project.workspace_id,
@@ -248,6 +252,24 @@ def install_ai_orchestration_runtime(module: Any) -> None:
         else:
             state.orchestration_status = "ci_green_evidence_pending"
         await db.commit()
+
+        # The persisted transition is authoritative. Board refresh is a best-effort
+        # delivery signal after commit so a transient WebSocket failure cannot
+        # roll back Review or make GitHub retry the same business transition.
+        if moved_to_review:
+            try:
+                import main_legacy
+
+                await main_legacy.manager.broadcast(
+                    {"type": "board.refresh", "revision": project.revision},
+                    project.id,
+                )
+            except Exception:
+                logger.warning(
+                    "Unable to broadcast AI orchestration Review transition for project %s",
+                    getattr(project, "id", "unknown"),
+                    exc_info=True,
+                )
         return state
 
     module._dod = dod

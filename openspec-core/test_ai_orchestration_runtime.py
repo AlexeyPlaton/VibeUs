@@ -139,3 +139,64 @@ async def test_actions_only_ci_does_not_stick_on_empty_legacy_status_api(monkeyp
     assert result.orchestration_status == "ci_green_evidence_pending"
     assert result.last_check_summary["combined"] == "none"
     assert result.last_check_summary["combined_total"] == 0
+
+
+@pytest.mark.asyncio
+async def test_review_ready_reconciliation_broadcasts_board_refresh_after_commit(monkeypatch):
+    import main_legacy
+
+    head_sha = "c" * 40
+
+    async def github(project, method, path, **kwargs):
+        if path == "/pulls/77":
+            return {
+                "number": 77,
+                "state": "open",
+                "merged_at": None,
+                "html_url": "https://github.com/acme/shop/pull/77",
+                "head": {"sha": head_sha, "ref": "vibeus/vb-77"},
+            }
+        if path == f"/commits/{head_sha}/check-runs":
+            return {
+                "total_count": 1,
+                "check_runs": [{"name": "CI", "status": "completed", "conclusion": "success"}],
+            }
+        if path == f"/commits/{head_sha}/status":
+            return {"state": "pending", "total_count": 0, "statuses": []}
+        raise AssertionError(path)
+
+    broadcasts = []
+
+    async def broadcast(payload, project_id):
+        broadcasts.append((payload, project_id))
+
+    monkeypatch.setattr(ai_orchestration, "_gh", github)
+    monkeypatch.setattr(ai_orchestration, "criteria_auto_review_ready", lambda ticket: (True, []))
+    monkeypatch.setattr(main_legacy.manager, "broadcast", broadcast)
+
+    state = SimpleNamespace(
+        github_pr_number=77,
+        head_sha=None,
+        github_pr_url=None,
+        branch_name=None,
+        ci_state="pending",
+        orchestration_status="pr_open",
+        last_check_summary={},
+        last_failed_head_sha=None,
+        repair_attempts=0,
+        provider="web_ai",
+        preview_url=None,
+    )
+    project = SimpleNamespace(id="project-id", workspace_id="workspace-id", revision=4)
+    ticket = SimpleNamespace(id="ticket-id", status="in_progress", revision=2)
+    cfg = config(observe_preview=False, auto_move_to_review=True)
+    db = FakeDB()
+
+    result = await ai_orchestration._reconcile(db, project, ticket, state, cfg)
+
+    assert result.orchestration_status == "review_ready"
+    assert ticket.status == "review"
+    assert ticket.revision == 3
+    assert project.revision == 5
+    assert db.commits == 1
+    assert broadcasts == [({"type": "board.refresh", "revision": 5}, "project-id")]
