@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import type { Ticket, BoardColumn, BoardData } from '../types';
 import { KanbanCard } from './KanbanCard';
 
@@ -33,6 +33,7 @@ export interface KanbanColumnProps {
   canWrite: boolean;
   canReview: boolean;
   handleAddTicket?: (e?: React.FormEvent, customTitle?: string, customPriority?: any, colId?: string) => void;
+  isFiltering?: boolean;
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -63,6 +64,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   canWrite,
   canReview,
   handleAddTicket,
+  isFiltering = false,
 }) => {
   const { t: t18n } = useTranslation();
   const isDoneCol = col.id === 'done';
@@ -117,8 +119,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         : 'bg-slate-400';
 
   return (
-    <section className={`w-80 flex flex-col h-full shrink-0 font-['Plus_Jakarta_Sans',sans-serif] ${isDoneCol ? 'opacity-90' : ''}`}>
-      <header className="flex items-center justify-between border-b border-white/[0.06] pb-2.5 mb-3">
+    <section
+      data-board-column={col.id}
+      aria-label={`${getColumnLabel(col)} · ${colTickets.length}`}
+      className={`enterprise-kanban-column w-80 flex flex-col h-full shrink-0 font-['Plus_Jakarta_Sans',sans-serif] ${isDoneCol ? 'opacity-90' : ''}`}
+    >
+      <header className="enterprise-column-header flex items-center justify-between border-b border-white/[0.06] pb-2.5 mb-3">
         <div className="flex min-w-0 items-center gap-2">
           <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDotClass}`} aria-hidden="true" />
           <h3 className="truncate text-xs font-bold text-slate-200">{getColumnLabel(col)}</h3>
@@ -130,6 +136,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               type="button"
               onClick={() => setIsCreatingTicket((value) => !value)}
               title={t18n('column.create_task_title')}
+              aria-label={t18n('column.create_task_title')}
               className="flex h-6 w-6 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.04] text-slate-400 transition-colors hover:bg-white/[0.08] hover:text-white"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -153,9 +160,9 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         </div>
       </header>
 
-      <div className="flex-1 space-y-2.5 overflow-y-auto pr-1">
+      <div className="enterprise-column-scroll flex-1 space-y-2.5 overflow-y-auto pr-1">
         {canCreateInColumn && isCreatingTicket && (
-          <form onSubmit={handleInlineSubmit} className="spatial-card space-y-2.5 border-indigo-500/30 p-3 animate-fadeIn">
+          <form onSubmit={handleInlineSubmit} className="spatial-card enterprise-quick-create space-y-2.5 border-indigo-500/30 p-3 animate-fadeIn">
             <input
               type="text"
               value={inlineTicketTitle}
@@ -205,7 +212,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         )}
 
         {colTickets.length === 0 && !isCreatingTicket ? (
-          canCreateInColumn ? (
+          isFiltering ? (
+            <div className="enterprise-filter-empty flex min-h-[92px] w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/[0.08] p-4 text-center text-xs text-slate-500">
+              <Search className="h-4 w-4" />
+              <span className="font-medium">{t18n('v7.kanban.no_matches')}</span>
+            </div>
+          ) : canCreateInColumn ? (
             <button
               type="button"
               onClick={() => setIsCreatingTicket(true)}
