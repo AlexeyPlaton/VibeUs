@@ -8,7 +8,9 @@ A reviewer points at the real UI problem. VibeUs keeps the page, element, viewpo
 
 AI can do the implementation. **Final acceptance stays human.**
 
-[Live product](https://vibeus.pro) · [Widget integration](docs/widget_integration.md) · [Self-hosting](docs/self_hosting.md) · [API](docs/api.md)
+[Live product](https://vibeus.pro) · [Widget integration](docs/WIDGET_INTEGRATION.md) · [Self-hosting](docs/SELF_HOSTING.md) · [API](docs/API.md)
+
+Support: **[support@vibeus.pro](mailto:support@vibeus.pro)**
 
 ---
 
@@ -161,16 +163,24 @@ The repository includes executable release gates for security, billing, evidence
 
 VibeUs can be run on your own infrastructure.
 
-Fastest local stack:
+Fastest local stack from a clean clone:
 
 ```bash
 git clone https://github.com/AlexeyPlaton/VibeUs.git vibeus
 cd vibeus
 cp .env.example .env
+
+cd openspec-web
+npm ci
+npm run build:all
+cd ..
+
 docker compose up -d --build
 ```
 
-See [Self-Hosting VibeUs](docs/self_hosting.md) before a production deployment.
+Open the web UI at `http://localhost`. The backend API is also exposed directly at `http://localhost:8000`; readiness is available at `http://localhost:8000/ready`.
+
+See [Self-Hosting VibeUs](docs/SELF_HOSTING.md) before a production deployment.
 
 ### Current scaling limitation
 
@@ -192,7 +202,7 @@ Frontend + widget:
 
 ```bash
 cd openspec-web
-npm install
+npm ci
 npm run build:all
 ```
 
@@ -200,7 +210,7 @@ CLI:
 
 ```bash
 cd openspec-cli
-npm install
+npm ci
 npm test
 ```
 

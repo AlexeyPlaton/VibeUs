@@ -1,116 +1,186 @@
-﻿# 🛠️ Self-Hosting VibeUs
+# Self-Hosting VibeUs
 
-VibeUs can be fully self-hosted on your own virtual server (VPS) or local infrastructure.
+VibeUs can be self-hosted on a local machine, private infrastructure, or a VPS.
+
+For product support and questions about these instructions, use **support@vibeus.pro**.
 
 ---
 
-## 1. Architecture Overview
+## 1. Architecture overview
 
 A self-hosted VibeUs instance consists of:
-- **`openspec-core`**: FastAPI Python backend (REST API, WebSocket sync multiplexer, Live Preview proxy).
-- **`openspec-web`**: React 19 web application (landing, `/app` dashboard, project board) and the standalone embeddable widget (`vibus-widget.umd.cjs`).
-- **`openspec-cli`**: Node.js CLI tool for developers (`npx vibus listen`, tunnel connectors).
-- **Database**: PostgreSQL 15+ (production recommended) or SQLite with async driver.
 
-> ⚠️ **Worker Architecture:** Backend **must** run with a single Uvicorn worker (`--workers 1`). WebSocket sync and Live Preview reverse proxy maintain state in process memory.
+- **`openspec-core`** — FastAPI backend: REST API, WebSocket sync, billing adapters and Live Preview proxy.
+- **`openspec-web`** — React web application: landing, `/app` dashboard, project board and standalone widget.
+- **`openspec-cli`** — Node.js CLI for developer workflows (`npx vibus listen`, MCP and tunnel commands).
+- **Database** — PostgreSQL 15+ for production; SQLite is supported for development/tests only.
+- **Nginx** — serves the built SPA and proxies API/WebSocket traffic in the reference Compose stack.
+
+> **Current worker rule:** run exactly one Uvicorn application worker. WebSocket sync and Live Preview routing still keep active connection state in process memory.
 
 ---
 
-## 2. Quick Start with Docker Compose
+## 2. Local quick start with Docker Compose
 
-The fastest way to deploy a complete stack:
+### Prerequisites
+
+- Docker with Compose v2;
+- Node.js 20+ (CI currently uses Node.js 22);
+- npm.
+
+The reference `docker-compose.yml` mounts the already-built frontend and widget from `openspec-web/dist-landing` and `openspec-web/dist-widget`. A clean clone therefore needs the frontend build **before** starting Compose.
 
 ```bash
-git clone https://github.com/AlexeyPlaton/Vibus.git vibeus
+git clone https://github.com/AlexeyPlaton/VibeUs.git vibeus
 cd vibeus
 cp .env.example .env
+
+cd openspec-web
+npm ci
+npm run build:all
+cd ..
+
 docker compose up -d --build
 ```
 
-Your self-hosted instance will be available at `http://localhost:8000`.
+Local endpoints in the reference Compose stack:
 
----
+- Web UI: `http://localhost`
+- API direct: `http://localhost:8000`
+- API readiness: `http://localhost:8000/ready`
+- PostgreSQL exposed to the host: `localhost:5433`
 
-## 3. Required Environment Variables & Security Keys
-
-In production, generate cryptographic secrets before starting the server. Never use defaults in production!
+Useful checks:
 
 ```bash
-# Generate 64-char hex strings:
-openssl rand -hex 32
+docker compose ps
+curl -fsS http://localhost:8000/ready
 ```
 
-| Variable | Required | Description | Example |
-| :--- | :---: | :--- | :--- |
-| `SECRET_KEY` | **Yes** | Session signature and JWT signing key | `openssl rand -hex 32` |
-| `TOKEN_PEPPER` | **Yes** | Server pepper for API tokens and passwords | `openssl rand -hex 32` |
-| `FIELD_ENCRYPTION_KEY` | **Yes** | Fernet / AES key for sensitive database columns | `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
-| `DATABASE_URL` | **Yes** | Async SQLAlchemy DB URL | `sqlite+aiosqlite:///./vibus.db` or `postgresql+asyncpg://user:pass@127.0.0.1:5432/vibeus` |
-| `CORS_ORIGINS` | **Yes** | Allowed web app and API origins | `https://vibeus.example.com` |
-| `ENVIRONMENT` | **Yes** | Environment tag (`production`, `staging`, `development`) | `production` |
-| `TELEGRAM_BOT_TOKEN` | Optional | Telegram bot token for instant task notifications | `123456:ABC-DEF...` |
+The root `.env.example` is a development template. Do not treat its placeholder values as production secrets.
 
 ---
 
-## 4. Manual Setup (Bare Metal / Ubuntu)
+## 3. Production configuration
 
-### Backend (`openspec-core`)
+For a production deployment, start from the maintained production template rather than the development `.env`:
+
+```bash
+cp deploy/env.production.example .env.production
+```
+
+The backend fails closed on important production invariants. At minimum configure and review:
+
+| Variable | Requirement |
+| --- | --- |
+| `ENVIRONMENT` | `production` |
+| `DATABASE_URL` | PostgreSQL; SQLite is rejected in production |
+| `TOKEN_PEPPER` | Independent high-entropy secret, at least 32 random bytes |
+| `FIELD_ENCRYPTION_KEY` | Independent production encryption key |
+| `CORS_ORIGINS` | Explicit trusted origins; wildcard `*` is rejected |
+| `PUBLIC_BASE_URL` | Authenticated account/API origin |
+| `PREVIEW_BASE_URL` | A **different host and different registrable-domain boundary** from `PUBLIC_BASE_URL` |
+| `ENABLE_DEMO_SEED` | `false` |
+| `ENABLE_MOCK_BILLING` | `false` |
+
+Generate secrets independently. For example:
+
+```bash
+openssl rand -hex 32
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+There is no required `SECRET_KEY` setting in the current backend configuration; do not invent one from older deployment notes.
+
+Payment providers are also fail-closed. Keep a provider disabled until the corresponding merchant account, credentials, webhook configuration and fiscal/legal setup are actually ready. The canonical hosted international path is prepared for CloudPayments but remains disabled by default.
+
+See `docs/PRODUCTION_DEPLOYMENT.md` for the production reverse-proxy, TLS and deployment boundary.
+
+---
+
+## 4. Manual development setup
+
+### Backend
+
+Python 3.12 is the CI/reference version.
+
 ```bash
 cd openspec-core
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Run database migrations
-alembic upgrade head
-
-# Start server (Strictly 1 worker!)
-uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m alembic upgrade head
+python -m uvicorn main:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
-### Frontend & Widget Build (`openspec-web`)
-The web application and embeddable widget must be built with Vite:
+On Windows PowerShell, activate the virtual environment with:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+### Frontend
+
+In a second terminal:
 
 ```bash
 cd openspec-web
-npm install
-# Builds both SPA and the standalone static widget:
+npm ci
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+Open `http://localhost:5173`. During local development the frontend talks to the backend on `http://localhost:8000`.
+
+To build the production SPA and standalone widget:
+
+```bash
 npm run build:all
 ```
 
-`npm run build:all` builds the standalone widget and landing/app bundle; `build:widget` also synchronizes the verified widget artifacts into `openspec-core/static/`. Production Nginx should serve the built web bundle and proxy API/WebSocket traffic to port `8000`. Live Preview must use a separate registrable domain from the account application.
+`build:widget` also synchronizes the verified widget artifacts into `openspec-core/static/`.
 
 ---
 
-## 5. Systemd Service Example (`/etc/systemd/system/vibeus.service`)
+## 5. Production worker and origin isolation
 
-```ini
-[Unit]
-Description=VibeUs Cloud Backend
-After=network.target
+Until distributed realtime/tunnel state is implemented, keep the backend at one Uvicorn worker:
 
-[Service]
-User=admin
-WorkingDirectory=/var/www/vibeus/openspec-core
-EnvironmentFile=/var/www/vibeus/.env
-ExecStart=/var/www/vibeus/openspec-core/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --workers 1
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
 ```
+
+Live Preview serves untrusted developer content and must not share the authenticated account's registrable-domain cookie boundary. For example:
+
+```text
+PUBLIC_BASE_URL=https://vibeus.example.com
+PREVIEW_BASE_URL=https://preview.example.net
+```
+
+Do not use `preview.vibeus.example.com` for this boundary.
 
 ---
 
 ## 6. Updating
 
-To update a self-hosted instance:
+For a reviewed release:
+
 ```bash
 git pull origin main
-cd openspec-core
-venv/bin/alembic upgrade head
-cd ../openspec-web
+cd openspec-web
+npm ci
 npm run build:all
-sudo systemctl restart vibeus
+cd ..
+python run_release_gate.py
+
+docker compose up -d --build
 ```
+
+For production, use the maintained production Compose/deployment flow documented in `docs/PRODUCTION_DEPLOYMENT.md`, apply migrations for the exact release and verify `/ready` before routing traffic.
+
+---
+
+## 7. Support
+
+General product and self-hosting support: **support@vibeus.pro**.
+
+For a suspected security vulnerability, do not publish secrets or customer data in a public issue; follow `SECURITY.md`.
