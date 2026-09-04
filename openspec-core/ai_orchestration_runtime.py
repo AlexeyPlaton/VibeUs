@@ -24,6 +24,43 @@ def install_ai_orchestration_runtime(module: Any) -> None:
     original_get_config = module._get_or_create_config
     original_config_payload = module._config_payload
 
+    def dod(ticket: Any) -> list[str]:
+        """Extract human-readable DoD items from current and legacy checklist shapes."""
+        raw = getattr(ticket, "checklists", None) or {}
+        items: Any = raw.get("items", []) if isinstance(raw, dict) else raw
+        result: list[str] = []
+        if isinstance(items, list):
+            for item in items[:100]:
+                if isinstance(item, dict):
+                    text = (
+                        item.get("text")
+                        or item.get("title")
+                        or item.get("requirement")
+                        or item.get("label")
+                        or ""
+                    )
+                else:
+                    text = item
+                value = str(text or "").strip()
+                if value and value not in result:
+                    result.append(value[:2_000])
+        elif isinstance(raw, dict):
+            # Compatibility for early checklist maps where the human-readable
+            # criterion itself was stored as the key/value rather than in items.
+            for key, item in list(raw.items())[:100]:
+                if key == "items":
+                    continue
+                if isinstance(item, dict):
+                    text = item.get("text") or item.get("title") or item.get("requirement")
+                elif isinstance(item, str):
+                    text = item
+                else:
+                    text = key
+                value = str(text or "").strip()
+                if value and value not in result:
+                    result.append(value[:2_000])
+        return result
+
     async def get_or_create_config(db: Any, project: Any) -> Any:
         config = await original_get_config(db, project)
         # "Autopilot PR" and "Delivery" mean automatic dispatch only when the
@@ -201,6 +238,7 @@ def install_ai_orchestration_runtime(module: Any) -> None:
         await db.commit()
         return state
 
+    module._dod = dod
     module._get_or_create_config = get_or_create_config
     module._config_payload = config_payload
     module._preview_url = preview_url
