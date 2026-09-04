@@ -1,7 +1,10 @@
+from types import SimpleNamespace
+
 import pytest
 from fastapi import HTTPException
 
 import ai_patch
+import ai_orchestration
 from ai_orchestration_models import DEFAULT_PROTECTED_PATHS
 from main import app
 
@@ -15,6 +18,22 @@ def test_ai_orchestration_routes_are_registered_without_auto_merge():
     assert "/api/projects/{slug}/tickets/{ticket_id}/ai/reconcile" in paths
     assert "/api/projects/{slug}/automation/github-webhook" in paths
     assert not any("/ai/merge" in path or "/automation/merge" in path for path in paths)
+
+
+def test_ai_handoff_uses_real_checklist_items_as_definition_of_done():
+    ticket = SimpleNamespace(
+        checklists={
+            "items": [
+                {"text": "Checkout works at 390px viewport", "completed": False},
+                {"text": "Regression test covers the failure", "completed": True},
+            ]
+        }
+    )
+    assert ai_orchestration._dod(ticket) == [
+        "Checkout works at 390px viewport",
+        "Regression test covers the failure",
+    ]
+    assert "items" not in ai_orchestration._dod(ticket)
 
 
 def test_vibeus_patch_envelope_and_unified_diff_apply_cleanly():
