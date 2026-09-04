@@ -85,6 +85,12 @@ export const terminologyEn = {
       close: 'Close board',
     },
   },
+  bug: {
+    priority_low: '🟢 Low',
+    priority_medium: '🟡 Medium',
+    priority_high: '🔴 High',
+    submit_bug: 'Create fix task',
+  },
 };
 
 export const terminologyRu = {
