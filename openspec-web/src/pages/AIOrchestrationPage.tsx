@@ -3,7 +3,7 @@ import {
   ArrowLeft, Bot, Check, Copy, ExternalLink, GitBranch,
   RefreshCw, Rocket, ShieldCheck, Webhook,
 } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 type AgentKind = 'web_ai' | 'jules' | 'github_label_agent' | 'external_agent';
@@ -89,6 +89,7 @@ function errorMessage(data: any, fallback: string) {
 
 export function AIOrchestrationPage() {
   const { projectSlug = '' } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -101,6 +102,10 @@ export function AIOrchestrationPage() {
   const [busy, setBusy] = useState('');
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [copied, setCopied] = useState('');
+  const requestedTicket = useMemo(
+    () => new URLSearchParams(location.search).get('ticket')?.trim() || '',
+    [location.search],
+  );
 
   const request = async (url: string, init: RequestInit = {}) => {
     const response = await fetch(url, {
@@ -120,9 +125,20 @@ export function AIOrchestrationPage() {
     setBusy('load');
     try {
       const data = await request(`/api/projects/${encodeURIComponent(projectSlug)}/automation/overview`);
+      const tickets = (data.tickets || []) as TicketRow[];
       setOverview(data);
       setDraft(data.config);
-      setSelectedId((current) => current || data.tickets?.[0]?.id || '');
+      setSelectedId((current) => {
+        const requested = requestedTicket
+          ? tickets.find((ticket) => (
+              ticket.id === requestedTicket
+              || (ticket.key || '').toLowerCase() === requestedTicket.toLowerCase()
+            ))
+          : null;
+        if (requested) return requested.id;
+        if (current && tickets.some((ticket) => ticket.id === current)) return current;
+        return tickets[0]?.id || '';
+      });
     } catch (error: any) {
       setNotice({ ok: false, text: error?.message || t('v7.ai_orchestration.load_failed') });
     } finally {
@@ -130,7 +146,7 @@ export function AIOrchestrationPage() {
     }
   };
 
-  useEffect(() => { void load(); }, [projectSlug]);
+  useEffect(() => { void load(); }, [projectSlug, requestedTicket]);
 
   const selected = useMemo(
     () => overview?.tickets.find((ticket) => ticket.id === selectedId) || overview?.tickets[0] || null,

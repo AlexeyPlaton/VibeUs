@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Bot, X, KanbanSquare, List, Moon, Sun, GitBranch } from 'lucide-react';
 import { VibusWidgetUI } from './VibusWidgetUI';
+import { TicketAiProvider } from './TicketAiContext';
 import { tr } from '../i18n/config';
 import { persistUiTheme, resolveInitialUiTheme, type UiTheme } from '../utils/uiTheme';
 
@@ -134,14 +135,16 @@ export const ProjectBoardModal: React.FC<ProjectBoardModalProps> = ({
         </header>
 
         <div className="enterprise-board-stage flex-1 overflow-hidden">
-          <VibusWidgetUI
-            projectId={project.slug}
-            publicKey={project.public_widget_key || ''}
-            serverUrl={serverUrl}
-            mode="studio"
-            theme={appearance}
-            accentColor="indigo"
-          />
+          <TicketAiProvider projectSlug={project.slug}>
+            <VibusWidgetUI
+              projectId={project.slug}
+              publicKey={project.public_widget_key || ''}
+              serverUrl={serverUrl}
+              mode="studio"
+              theme={appearance}
+              accentColor="indigo"
+            />
+          </TicketAiProvider>
         </div>
       </div>
     </div>

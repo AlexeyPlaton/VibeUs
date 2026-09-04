@@ -67,19 +67,25 @@ test('delivery integrations are account-scoped, GitHub-App first, and expose obs
   assert.doesNotMatch(page, /method:\s*['"]POST['"].*deploy/);
 });
 
-test('account ticket details get a direct AI entry without changing the standalone widget bundle', () => {
-  const bridge = read('src/accountTicketAiBridge.ts');
+test('account ticket details get a native direct AI entry while standalone widget remains unchanged', () => {
+  const context = read('src/components/TicketAiContext.tsx');
+  const modal = read('src/components/TicketDetailModal.tsx');
+  const page = read('src/pages/AIOrchestrationPage.tsx');
   const main = read('src/main.tsx');
   const widget = read('src/widget.tsx');
   const board = read('src/components/ProjectBoardModal.tsx');
 
-  assert.match(main, /accountTicketAiBridge/);
-  assert.doesNotMatch(widget, /accountTicketAiBridge/);
-  assert.match(board, /data-project-slug/);
-  assert.match(bridge, /dataTicketAiEntry|ticketAiEntry|data-ticket-ai-entry/i);
-  assert.match(bridge, /v7\.ticket\.work_with_ai/);
-  assert.match(bridge, /\?ticket=/);
-  assert.match(bridge, /span\.font-mono/);
+  assert.match(context, /createContext/);
+  assert.match(context, /projectSlug/);
+  assert.match(board, /TicketAiProvider/);
+  assert.match(modal, /useTicketAiContext/);
+  assert.match(modal, /data-ticket-ai-entry/);
+  assert.match(modal, /v7\.ticket\.work_with_ai/);
+  assert.match(modal, /\?ticket=/);
+  assert.match(page, /URLSearchParams/);
+  assert.match(page, /requestedTicket/);
+  assert.doesNotMatch(main, /accountTicketAiBridge/);
+  assert.doesNotMatch(widget, /TicketAiProvider|TicketAiContext|accountTicketAiBridge/);
 });
 
 test('English and Russian orchestration and delivery terms remain layered symmetrically', () => {

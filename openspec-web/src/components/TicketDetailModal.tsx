@@ -3,10 +3,11 @@ import {
   X, Check, Copy, AlertTriangle, Bug, 
   MessageSquare, Plus, Trash2, Sparkles, User, 
   FolderGit2, CheckSquare, Send, BookOpen,
-  GitBranch, ExternalLink, RefreshCw
+  GitBranch, ExternalLink, RefreshCw, Bot
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { DoDManager } from './widget/ui/DoDManager';
+import { useTicketAiContext } from './TicketAiContext';
 import { getGhostSuggestion, rankChecksByRelevance } from '../utils/aiDoDMatcher';
 import { toPersistedCriterion } from '../utils/dodCatalog';
 import type { DoDItem, EngineeringQualityMode } from '../utils/dodCatalog';
@@ -95,6 +96,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   apiToken
 }) => {
   const { t: t18n } = useTranslation();
+  const ticketAi = useTicketAiContext();
 
   const [title, setTitle] = useState(ticket?.title || '');
   const [summary, setSummary] = useState(ticket?.summary || '');
@@ -141,6 +143,15 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
     } finally {
       setIsSyncingGithub(false);
     }
+  };
+
+  const handleWorkWithAi = () => {
+    if (!ticketAi?.projectSlug || !ticket) return;
+    const ticketKey = (ticket.key || ticket.id).trim();
+    if (!ticketKey) return;
+    window.location.assign(
+      `/app/ai/${encodeURIComponent(ticketAi.projectSlug)}?ticket=${encodeURIComponent(ticketKey)}`,
+    );
   };
 
   const currentNode = nodes.find(n => n.id === nodeId);
@@ -364,6 +375,20 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
               >
                 {isSyncingGithub ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <GitBranch className="w-3.5 h-3.5 text-indigo-400" />}
                 <span>{t18n('v7.ticket.github.button')}</span>
+              </button>
+            ) : null}
+
+            {ticketAi?.projectSlug ? (
+              <button
+                type="button"
+                onClick={handleWorkWithAi}
+                title={t18n('v7.ticket.work_with_ai')}
+                aria-label={t18n('v7.ticket.work_with_ai')}
+                data-ticket-ai-entry
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-xs font-semibold text-indigo-300 hover:text-indigo-200 rounded-xl transition-all cursor-pointer border border-indigo-500/30"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t18n('v7.ticket.work_with_ai')}</span>
               </button>
             ) : null}
 
