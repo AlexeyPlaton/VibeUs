@@ -1,7 +1,7 @@
 """add provider-agnostic AI orchestration state
 
 Revision ID: a4b5c6d7e8f9
-Revises: f2a3b4c5d6e7
+Revises: c5d6e7f8a9b0
 """
 from typing import Sequence, Union
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision: str = "a4b5c6d7e8f9"
-down_revision: Union[str, None] = "f2a3b4c5d6e7"
+down_revision: Union[str, None] = "c5d6e7f8a9b0"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -29,7 +29,7 @@ def upgrade() -> None:
         sa.Column("auto_move_to_review", sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column("max_repair_attempts", sa.Integer(), nullable=False, server_default="2"),
         sa.Column("merge_policy", sa.String(length=32), nullable=False, server_default="human_accept"),
-        sa.Column("protected_paths", sa.JSON(), nullable=False),
+        sa.Column("protected_paths", sa.JSON(), nullable=False, server_default=sa.text("'[]'")),
         sa.Column("github_webhook_secret_encrypted", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
@@ -52,7 +52,7 @@ def upgrade() -> None:
         sa.Column("orchestration_status", sa.String(length=64), nullable=False, server_default="idle"),
         sa.Column("repair_attempts", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("last_failed_head_sha", sa.String(length=64), nullable=True),
-        sa.Column("last_check_summary", sa.JSON(), nullable=False),
+        sa.Column("last_check_summary", sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
         sa.Column("last_error", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),

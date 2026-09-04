@@ -86,7 +86,6 @@ install_runtime_invariants()
 app = legacy.app
 manager = legacy.manager
 app.include_router(billing_router.router)
-app.include_router(ai_orchestration.router)
 
 # Seed proxy-visible values so old imports keep working as before.
 async_session = legacy.async_session
@@ -254,6 +253,14 @@ async def update_project_error_status(
         "linked_ticket_requires_human_acceptance": bool(group.ticket_id and payload.status == "resolved"),
     }
 
+
+# Include the orchestration router only after the legacy-wrapper route surgery is
+# complete. This makes the final FastAPI surface deterministic during test-module
+# collection and prevents later legacy route replacements from observing a
+# partially assembled orchestration surface.
+_AI_OVERVIEW_PATH = "/api/projects/{slug}/automation/overview"
+if not any(getattr(route, "path", None) == _AI_OVERVIEW_PATH for route in app.router.routes):
+    app.include_router(ai_orchestration.router)
 
 settings = legacy.settings
 lifespan = legacy.lifespan
