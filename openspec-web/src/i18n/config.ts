@@ -3,7 +3,7 @@ import { initReactI18next } from 'react-i18next';
 
 import en from './locales/en.json';
 import ru from './locales/ru.json';
-import { publicFeedbackEn, publicFeedbackRu } from './publicFeedbackTerms';
+import { v8En, v8Ru } from './v8';
 import { editorialEn, editorialRu } from './editorial';
 import { terminologyEn, terminologyRu } from './terminology';
 import { engineeringTermsEn, engineeringTermsRu } from './engineeringTerms';
@@ -45,8 +45,8 @@ const enTranslation = mergeDeep(
         mergeDeep(
           {
             ...en,
-            public_feedback: publicFeedbackEn.public_feedback,
-            feedback: { ...((en as any).feedback || {}), ...publicFeedbackEn.feedback },
+            public_feedback: v8En.public_feedback,
+            feedback: { ...((en as any).feedback || {}), ...v8En.feedback },
           },
           editorialEn,
         ),
@@ -67,8 +67,8 @@ const ruTranslation = polishRussianCopy(
           mergeDeep(
             {
               ...ru,
-              public_feedback: publicFeedbackRu.public_feedback,
-              feedback: { ...((ru as any).feedback || {}), ...publicFeedbackRu.feedback },
+              public_feedback: v8Ru.public_feedback,
+              feedback: { ...((ru as any).feedback || {}), ...v8Ru.feedback },
             },
             editorialRu,
           ),

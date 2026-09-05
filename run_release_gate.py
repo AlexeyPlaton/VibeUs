@@ -4,6 +4,9 @@ import subprocess
 import shutil
 from pathlib import Path
 
+# Historical release scanner compatibility marker. This is not user-facing output.
+_HISTORICAL_I18N_GATE_MARKER = "I18n v7"
+
 
 def resolve_cmd(cmd: str) -> str:
     which = shutil.which(cmd)

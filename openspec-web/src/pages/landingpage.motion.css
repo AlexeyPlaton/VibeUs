@@ -1,0 +1,128 @@
+/* Landing motion layer: keep the VibeUs visual language, but make the hero feel
+   like a live context relay rather than a static SaaS template. */
+
+.vibe-hero {
+  isolation: isolate;
+}
+
+.vibe-hero::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  width: min(70vw, 980px);
+  height: min(70vw, 980px);
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, .13) 0%, rgba(34, 211, 238, .045) 34%, transparent 68%);
+  filter: blur(8px);
+  animation: vibe-breathe 6.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.vibe-hero h1 {
+  text-wrap: balance;
+  letter-spacing: -.055em;
+}
+
+.vibe-hero h1 .quiet {
+  opacity: .68;
+}
+
+.vibe-orbit-stage {
+  position: relative;
+}
+
+.vibe-orbit-stage::before,
+.vibe-orbit-stage::after {
+  content: '';
+  position: absolute;
+  inset: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.vibe-orbit-stage::before {
+  box-shadow: 0 0 80px 22px rgba(99, 102, 241, .20);
+  animation: vibe-core-pulse 3.4s ease-in-out infinite;
+}
+
+.vibe-orbit-stage::after {
+  box-shadow: 0 0 130px 38px rgba(34, 211, 238, .08);
+  animation: vibe-core-pulse 3.4s 1.1s ease-in-out infinite;
+}
+
+.vibe-orbit-label {
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .22);
+}
+
+.vibe-btn-primary,
+.vibe-nav-cta {
+  position: relative;
+  isolation: isolate;
+}
+
+.vibe-btn-primary::after,
+.vibe-nav-cta::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: 0 0 0 0 rgba(99, 102, 241, .26);
+  animation: vibe-action-pulse 3.2s ease-out infinite;
+  pointer-events: none;
+}
+
+.vibe-nav-wrap {
+  backdrop-filter: blur(18px) saturate(130%);
+}
+
+.vibe-demo-app,
+.vibe-input-card,
+.vibe-loop-card,
+.vibe-big-card {
+  transform: translateZ(0);
+}
+
+@keyframes vibe-breathe {
+  0%, 100% { opacity: .62; transform: translate(-50%, -50%) scale(.94); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+@keyframes vibe-core-pulse {
+  0%, 100% { opacity: .46; transform: scale(.72); }
+  50% { opacity: 1; transform: scale(1.22); }
+}
+
+@keyframes vibe-action-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, .24); opacity: .8; }
+  65%, 100% { box-shadow: 0 0 0 14px rgba(99, 102, 241, 0); opacity: 0; }
+}
+
+@media (max-width: 760px) {
+  .vibe-hero::before {
+    width: 110vw;
+    height: 110vw;
+    top: 28%;
+  }
+
+  .vibe-hero h1 {
+    letter-spacing: -.045em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vibe-hero::before,
+  .vibe-orbit-stage::before,
+  .vibe-orbit-stage::after,
+  .vibe-btn-primary::after,
+  .vibe-nav-cta::after {
+    animation: none !important;
+  }
+}
