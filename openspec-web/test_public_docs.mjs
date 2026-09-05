@@ -64,18 +64,25 @@ test('private operator material is not shipped as current public documentation',
     'docs/INTERNATIONAL_E2E_LEGAL_AUDIT_2026-09-03.md',
     'docs/INTERNATIONAL_BILLING_RU.md',
     'docs/B2B_INVOICE_GUIDE_RU.md',
+    'docs/public_repo_policy.md',
   ]) {
     assert.equal(existsRepo(file), false, `${file} must stay out of the public release tree`);
   }
 });
 
-test('architecture and testing docs explain behavior without internal gate-version branding', () => {
+test('architecture, testing, product spec and i18n docs avoid internal release-version branding', () => {
   const architecture = readRepo('docs/ARCHITECTURE.md');
   const testing = readRepo('docs/TESTING.md');
+  const spec = readRepo('docs/SPEC.md');
+  const i18n = readRepo('docs/I18N.md');
   assert.match(architecture, /feedback\/error.*task.*Review.*human acceptance/is);
   assert.match(architecture, /Public Widget Keys/i);
   assert.match(testing, /Prefer a test that observes behavior/i);
   assert.match(testing, /quality-gates\//);
+  assert.match(spec, /VibeUs Product Specification/);
+  assert.match(spec, /feedback\/error.*task.*verification.*Review.*human acceptance/is);
+  assert.doesNotMatch(spec, /Платформа v[0-9]|Vibus:/i);
+  assert.doesNotMatch(i18n, /\bV7\b|Required gate/i);
   assert.doesNotMatch(testing, /Quality Gate v[0-9]/i);
 });
 
