@@ -20,11 +20,14 @@ def test_public_runtime_does_not_mount_founder_control_plane():
 
 def test_public_nginx_fails_closed_for_control_paths():
     nginx = (ROOT / "nginx.prod.conf").read_text(encoding="utf-8")
-    assert "location ^~ /api/control" in nginx
-    assert "location ^~ /control" in nginx
+    # Scope ordering checks to the HTTPS virtual host; the HTTP server has its own
+    # earlier catch-all whose only purpose is redirecting traffic to HTTPS.
+    https = nginx[nginx.index("# 2. HTTPS Production Server"):]
+    assert "location ^~ /api/control" in https
+    assert "location ^~ /control" in https
     # Both private namespaces must be denied before the generic public API/SPA.
-    assert nginx.index("location ^~ /api/control") < nginx.index("location /api/")
-    assert nginx.index("location ^~ /control") < nginx.index("location / {")
+    assert https.index("location ^~ /api/control") < https.index("location /api/")
+    assert https.index("location ^~ /control") < https.index("location / {")
 
 
 def test_founder_routers_are_mounted_only_by_pytest_assembly_in_public_repo():
