@@ -8,14 +8,14 @@ const radar = readFileSync(new URL('./src/pages/ProductRadarPage.tsx', import.me
 const workbench = readFileSync(new URL('./src/pages/FounderWorkbenchPage.tsx', import.meta.url), 'utf8');
 const shell = readFileSync(new URL('./src/components/FounderControlShell.tsx', import.meta.url), 'utf8');
 
-test('founder cockpit is separate from normal account RBAC and has one shared founder navigation shell', () => {
-  assert.match(app, /path="\/control" element={<FounderControlShell><ProductRadarPage/);
-  assert.match(app, /path="\/control\/workbench" element={<FounderControlShell><FounderWorkbenchPage/);
-  assert.match(app, /path="\/control\/ops" element={<FounderControlShell><ControlCenterPage/);
+test('founder cockpit is not mounted in the public customer SPA', () => {
+  assert.doesNotMatch(app, /FounderControlShell/);
+  assert.doesNotMatch(app, /ProductRadarPage/);
+  assert.doesNotMatch(app, /FounderWorkbenchPage/);
+  assert.doesNotMatch(app, /ControlCenterPage/);
+  assert.doesNotMatch(app, /path="\/control/);
   assert.match(shell, /Launch & Growth/);
   assert.match(shell, /Operations/);
-  assert.doesNotMatch(app, /EnterpriseDashboardFrame><ProductRadarPage/);
-  assert.doesNotMatch(app, /EnterpriseDashboardFrame><ControlCenterPage/);
 });
 
 test('control UI requires explicit step-up for sensitive actions', () => {
