@@ -9,6 +9,7 @@ import { GitHubAppCallbackPage } from './pages/GitHubAppCallbackPage';
 import { ControlCenterPage } from './pages/ControlCenterPage';
 import { ProductRadarPage } from './pages/ProductRadarPage';
 import { FounderWorkbenchPage } from './pages/FounderWorkbenchPage';
+import { FounderGrowthStrategyPage } from './pages/FounderGrowthStrategyPage';
 import { FounderControlShell } from './components/FounderControlShell';
 import { LegalPage } from './pages/legalpage';
 import { EnterpriseDashboardFrame } from './components/EnterpriseDashboardFrame';
@@ -25,6 +26,7 @@ function App() {
         <Route path="/app/integrations/:projectSlug" element={<EnterpriseDashboardFrame><DeliveryIntegrationsPage /></EnterpriseDashboardFrame>} />
         <Route path="/app/integrations/github/callback" element={<EnterpriseDashboardFrame><GitHubAppCallbackPage /></EnterpriseDashboardFrame>} />
         <Route path="/control" element={<FounderControlShell><ProductRadarPage /></FounderControlShell>} />
+        <Route path="/control/strategy" element={<FounderControlShell><FounderGrowthStrategyPage /></FounderControlShell>} />
         <Route path="/control/workbench" element={<FounderControlShell><FounderWorkbenchPage /></FounderControlShell>} />
         <Route path="/control/ops" element={<FounderControlShell><ControlCenterPage /></FounderControlShell>} />
         <Route path="/billing/international" element={<InternationalCheckoutPage />} />
