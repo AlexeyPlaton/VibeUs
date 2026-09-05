@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Activity, ClipboardCheck, Settings2 } from 'lucide-react';
+import { Activity, ClipboardCheck, Route, Settings2 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 function NavLink({ href, active, children }: { href: string; active: boolean; children: ReactNode }) {
@@ -24,7 +24,8 @@ export function FounderControlShell({ children }: { children: ReactNode }) {
           <div className="text-xs font-black uppercase tracking-[0.2em] text-indigo-300">VibeUs · Founder cockpit</div>
           <div className="flex flex-wrap gap-1">
             <NavLink href="/control" active={location.pathname === '/control'}><Activity className="h-3.5 w-3.5" /> Radar</NavLink>
-            <NavLink href="/control/workbench" active={location.pathname.startsWith('/control/workbench')}><ClipboardCheck className="h-3.5 w-3.5" /> Launch & Growth</NavLink>
+            <NavLink href="/control/strategy" active={location.pathname.startsWith('/control/strategy')}><Route className="h-3.5 w-3.5" /> Strategy</NavLink>
+            <NavLink href="/control/workbench" active={location.pathname.startsWith('/control/workbench')}><ClipboardCheck className="h-3.5 w-3.5" /> Founder tools</NavLink>
             <NavLink href="/control/ops" active={location.pathname.startsWith('/control/ops')}><Settings2 className="h-3.5 w-3.5" /> Operations</NavLink>
           </div>
         </div>
