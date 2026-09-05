@@ -1,22 +1,36 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable user-facing changes to VibeUs are documented here.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+### Added
+- Human Review and final-acceptance boundary for AI-assisted delivery.
+- Runtime Error Bridge for bringing backend failures into the same task workflow.
+- GitHub App-first repository connection and guarded non-production preview delivery.
+- English and Russian shipping UI.
+- Browser E2E release journeys and migration/runtime regression coverage.
+
+### Changed
+- Public project documentation now focuses on the product workflow, architecture and reproducible testing rather than internal launch/operator notes.
+- Founder/business operating surfaces are separated from the public customer runtime.
+
+### Security
+- Public widget credentials are separated from secret API/runtime-ingest credentials.
+- Browser-session mutations enforce trusted-origin checks.
+- High-risk task criteria can require verification evidence before Review.
+- Live Preview is separated from the account origin in production.
 
 ## [0.1.0] - 2026-08-27
 
 ### Added
-- **Widget**: Embeddable Web Component for reporting bugs directly from websites.
-- **DOM Inspector**: Precise point-and-click bug reporting with automatic DOM context capture.
-- **Text Selection**: Ability to highlight text to report typos and content issues.
-- **Backend**: FastAPI-based server with PostgreSQL for state management.
-- **CLI Bridge**: Node.js CLI daemon to sync issues via WebSocket to local IDEs (`TASKS_FOR_AI.md`).
-- **Telegram Integration**: Real-time notifications for new issues and QA status changes.
-- **i18n**: Multi-language support (English, Russian, Chinese, Hindi).
-- **Kanban Board**: Built-in dashboard for managing the issue lifecycle (Open -> QA Review -> Done).
-- **Spec Tree**: Hierarchical project specification management.
-- **Docker Support**: Ready-to-use Docker Compose configuration for easy self-hosting.
+- Embeddable visual-feedback widget.
+- Point-and-click element context capture.
+- Text-selection feedback.
+- FastAPI backend with persistent project/task state.
+- Node.js CLI with WebSocket synchronization and `.vibus/TASKS_FOR_AI.md`.
+- Kanban-style task board.
+- Project specification tree.
+- Docker Compose self-hosting baseline.

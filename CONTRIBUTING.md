@@ -2,51 +2,74 @@
 
 Thanks for helping improve VibeUs.
 
-## Dual-Repository Development Model & Pull Requests
-
-VibeUs uses a dual-repository architecture to deliver clean, reproducible open-source releases without publishing internal development artifacts, forensic test baselines, or private deployment credentials:
-- **Public Repository (`AlexeyPlaton/VibeUs`)**: The open-source face for community issues, discussions, and external Pull Requests.
-- **Canonical Repository**: Private development source of truth, forensic verification history, and continuous production deployment orchestration.
-
-### Pull Request Lifecycle
-1. **Submit**: Contributors fork and open Pull Requests against `main` on the public `AlexeyPlaton/VibeUs` repository.
-2. **Review**: Maintainers review the proposed code and test additions.
-3. **Import & Verification**: Approved PR changes are imported into the canonical repository, where the full 16-section release gate (`python run_release_gate.py`) executes.
-4. **Mirror Synchronization**: Automated mirror tooling (`build_public_mirror.py`) regenerates and synchronizes the public repository with full contributor git attribution preserved.
-
 ## Before opening a pull request
 
 1. Start from the current `main` branch.
-2. Keep changes focused on one problem.
-3. Do not commit `.env` files, credentials, production exports, database files, customer data, review snapshots, or local machine paths.
+2. Keep the change focused on one problem.
+3. Do not commit `.env` files, credentials, database exports, customer data, production logs with sensitive data, or local machine paths.
 4. Add a regression test for bug fixes whenever the behavior is automatable.
-5. Preserve security and tenant boundaries rather than making a test pass by disabling the protected behavior.
-6. Run the relevant focused tests first, then the official release gate when your environment supports it.
+5. Preserve tenant, authentication, payment and preview-isolation boundaries instead of weakening them to make a test pass.
+6. Run the focused tests for the area you changed. Run the full release checks before a release-sized change when your environment supports it.
 
 ## Main verification commands
 
+Frontend and widget:
+
 ```bash
-# Frontend / widget
 cd openspec-web
 npm ci
 npm test
 npm run build:all
+```
 
-# CLI
-cd ../openspec-cli
+CLI:
+
+```bash
+cd openspec-cli
 npm ci
 npm test
+```
 
-# Full release contract (from repository root)
-cd ..
+Backend:
+
+```bash
+cd openspec-core
+python -m pytest -q
+```
+
+Full repository release checks:
+
+```bash
 python run_release_gate.py
 ```
 
-The release gate includes backend, migrations, frontend contracts, TypeScript, Linux case-sensitive imports, widget build, CLI, billing/security gates, criteria evidence binding, and i18n checks.
+See `docs/TESTING.md` for the purpose of each layer.
 
-## Engineering criteria
+## Pull request expectations
 
-A checked Definition of Done item (`[x]`) is an implementation claim, not proof. For Strict/Critical work, required high-risk criteria may need allowlisted verification evidence before Review. Final acceptance remains a human action.
+A useful pull request explains:
+
+- the problem being solved;
+- the user-visible or system behavior that changes;
+- how it was tested;
+- any migration, deployment or compatibility impact.
+
+Screenshots or a short recording are useful for visible UI changes.
+
+## AI-assisted development
+
+AI-assisted coding is welcome. The contributor remains responsible for the change.
+
+Generated or heavily assisted code should meet the same bar as handwritten code: understandable diff, correct behavior, tests where appropriate, no invented APIs or configuration, and no weakening of security boundaries. Do not include model transcripts, prompt dumps or private customer context in the repository.
+
+## Product rules worth preserving
+
+- Final acceptance of a task remains a human action.
+- A checked Definition of Done item is not automatically proof of completion.
+- Public widget credentials and secret developer/runtime credentials are separate capabilities.
+- Do not execute shell commands derived from untrusted ticket or feedback text.
+- Keep browser diagnostics to the minimum context needed for the task.
+- UI language and billing-market configuration are separate concerns.
 
 ## Security reports
 
@@ -54,8 +77,4 @@ Do not publish exploitable vulnerabilities as normal issues. See `SECURITY.md`.
 
 ## Style
 
-- Prefer clear, small changes over broad rewrites.
-- Keep user-facing copy in the i18n locale files.
-- Keep UI language independent from billing market/payment configuration.
-- Do not introduce shell execution from untrusted ticket/AI input.
-- Do not weaken data-minimization defaults.
+Prefer clear names, small modules and behavior-oriented tests over additional framework layers. If a simpler implementation preserves the same contract, prefer the simpler one.

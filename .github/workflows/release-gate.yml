@@ -145,6 +145,7 @@ jobs:
       - run: npm test
 
   quality-gates:
+    name: regression-contracts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -155,28 +156,27 @@ jobs:
           cache-dependency-path: openspec-core/requirements.txt
       - run: python -m pip install --upgrade pip
       - run: pip install -r openspec-core/requirements.txt
-      - name: Quality Gate v4 (Release Integrity)
+      - name: Release integrity
         run: |
           python quality-gates/v4-release-integrity/verify_integrity.py
           python -m pytest -q quality-gates/v4-release-integrity/tests
-      - name: Quality Gate v5 (Billing Ledger Closure)
+      - name: Billing and entitlement ledger
         run: |
           python quality-gates/v5-billing-ledger-closure/verify_integrity.py
           python -m pytest -q quality-gates/v5-billing-ledger-closure/tests
-      - name: Quality Gate v6 (Criteria Contract v2)
-        run: |
-          python quality-gates/v6-criteria-contract/verify_contract_v2.py .
-      - name: Quality Gate v6.1 (Evidence Closure)
+      - name: Definition-of-Done criteria contract
+        run: python quality-gates/v6-criteria-contract/verify_contract_v2.py .
+      - name: Verification evidence closure
         run: |
           python quality-gates/v6.1-evidence-closure/verify_evidence_closure.py .
           node --test quality-gates/v6.1-evidence-closure/tests-js/evidence_closure.test.mjs
           python quality-gates/v6.1-evidence-closure/scripts/migration_smoke.py .
-      - name: Quality Gate v6.2 (Trusted Evidence Binding)
+      - name: Trusted evidence binding
         run: |
           python quality-gates/v6.2-trusted-evidence/verify_trusted_evidence.py .
           node --test quality-gates/v6.2-trusted-evidence/tests-js/trusted_evidence.test.mjs
           python -m pytest -q quality-gates/v6.2-trusted-evidence/tests
-      - name: Quality Gate v7 (I18N Global Launch)
+      - name: English and Russian internationalization
         run: |
           python quality-gates/v7-i18n-global-launch/verify_i18n_global_launch.py .
           node --test quality-gates/v7-i18n-global-launch/tests-js/i18n_contract.test.mjs

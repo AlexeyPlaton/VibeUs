@@ -1,60 +1,53 @@
 # VibeUs
 
-**Turn “this is broken” into an AI-ready engineering task.**
+**Turn vague feedback into an engineering task a developer or coding agent can actually use.**
 
-VibeUs connects visual feedback, runtime failures, developers, and coding agents without making the client learn a ticket tracker.
+A reviewer clicks the broken part of the page. VibeUs keeps the route, viewport, selected element and useful diagnostic context attached to the report, then makes the task available in the web board, Markdown next to the repository, or MCP.
 
-A reviewer points at the real UI problem. VibeUs keeps the page, element, viewport, and minimum diagnostic context attached, then sends the work to the built-in board, readable Markdown next to your repository, or MCP.
+AI can help implement the fix. **A human accepts the result.**
 
-AI can do the implementation. **Final acceptance stays human.**
+[Try VibeUs](https://vibeus.pro) · [Widget setup](docs/WIDGET_INTEGRATION.md) · [Self-host](docs/SELF_HOSTING.md) · [Architecture](docs/ARCHITECTURE.md) · [API](docs/API.md)
 
-[Live product](https://vibeus.pro) · [Widget integration](docs/WIDGET_INTEGRATION.md) · [Self-hosting](docs/SELF_HOSTING.md) · [API](docs/API.md)
-
-Support: **[support@vibeus.pro](mailto:support@vibeus.pro)**
+Support: **support@vibeus.pro**
 
 ---
 
-## The loop
+## What problem does it solve?
+
+Feedback such as “the checkout button is broken on mobile” is useful to the person looking at the screen, but incomplete for the person fixing it.
+
+Before work can start, somebody usually has to recover the page, viewport, element, reproduction steps and sometimes a related backend failure, then move all of that into an issue, IDE or coding-agent prompt.
+
+VibeUs is the bridge between those two moments.
 
 ```text
-client / QA feedback
-        ↓
-page + element + viewport + context
-        ↓
-VibeUs ticket
-        ↓
-Kanban / TASKS_FOR_AI.md / MCP
-        ↓
-developer or coding agent
-        ↓
-verified Definition of Done
-        ↓
-human Review / acceptance
+reviewer / QA
+     │
+     │ clicks the real UI problem
+     ▼
+visual feedback + minimal context
+     │
+     ├── web board
+     ├── .vibus/TASKS_FOR_AI.md
+     └── MCP
+              │
+              ▼
+      developer / coding agent
+              │
+              ▼
+       verification + Review
+              │
+              ▼
+        human acceptance
 ```
 
-Backend failures can enter the same workflow through the Runtime Error Bridge using sanitized runtime context such as route, stack metadata, and request/correlation ID.
+Backend failures can enter the same workflow through the Runtime Error Bridge.
 
 ---
 
-## Why VibeUs exists
+## Quick start
 
-“The checkout button is broken on mobile” is obvious to the person looking at the screen.
-
-It is not yet a useful engineering task.
-
-Usually somebody still has to recover the route, viewport, exact element, reproduction details, maybe a backend failure, and then copy all of that into an IDE or coding agent.
-
-VibeUs tries to remove that translation step.
-
-It is **not** a replacement for your IDE, Git workflow, or Jira. It starts earlier — at the moment a human sees a problem but the developer does not yet have enough context to act on it.
-
----
-
-## Try the visual feedback flow
-
-Create a project in the hosted workspace, then copy the generated widget snippet from the dashboard.
-
-The canonical embed looks like this:
+Create a project in the hosted workspace and copy the generated widget snippet:
 
 ```html
 <script
@@ -67,23 +60,12 @@ The canonical embed looks like this:
 </script>
 ```
 
-The browser receives only the **Public Widget Key**. Do not put secret API tokens in frontend HTML.
+The browser receives only the **Public Widget Key**. Secret API and runtime-ingest credentials stay server-side or in trusted developer tooling.
 
----
-
-## Bring tasks next to the code
-
-Run the CLI directly with `npx`:
+### Bring tasks next to the code
 
 ```bash
 npx vibus listen --project your-project-slug --server https://vibeus.pro
-```
-
-Or install it globally:
-
-```bash
-npm install -g vibus
-vibus listen
 ```
 
 The CLI maintains:
@@ -94,25 +76,13 @@ The CLI maintains:
 └── TASKS_FOR_AI.md
 ```
 
-`TASKS_FOR_AI.md` is designed to be readable by both developers and local coding agents.
-
-For Strict/Critical work, checking a DoD item does **not** prove completion by itself. Required BLOCKER/HIGH criteria need a valid verification receipt bound to the current criterion contract before automatic Review can be unlocked.
-
----
-
-## MCP
-
-VibeUs also exposes structured actions for agent workflows through MCP:
+### Use MCP
 
 ```bash
 npx vibus mcp --project your-project-slug
 ```
 
-This lets an agent work with VibeUs tasks without making the hosted UI the center of your development workflow.
-
----
-
-## Share localhost for review
+### Share localhost for review
 
 ```bash
 npx vibus share --port 3000 --server https://vibeus.pro
@@ -120,50 +90,45 @@ npx vibus share --port 3000 --server https://vibeus.pro
 
 Live Preview creates a temporary review path for a local development server.
 
-For hosted production deployments, account/API traffic and untrusted preview traffic are intentionally separated onto different registrable domains.
+---
+
+## Included
+
+- element-attached visual feedback;
+- text and voice feedback;
+- Runtime Error Bridge;
+- project board and Review flow;
+- `.vibus/TASKS_FOR_AI.md` projection;
+- MCP integration;
+- Live Preview;
+- optional verification evidence for high-risk Definition of Done criteria;
+- GitHub delivery integration and non-production previews;
+- hosted and self-hosted deployment;
+- English and Russian UI.
+
+VibeUs is intentionally not an IDE, code generator or Jira replacement. It focuses on getting useful context from the person who sees a problem to the person or agent that fixes it.
 
 ---
 
-## What is included
+## Trust and safety boundaries
 
-- Visual, element-attached feedback widget.
-- Text / voice feedback flow.
-- Runtime Error Bridge.
-- Kanban and human Review.
-- `.vibus/TASKS_FOR_AI.md` projection.
-- MCP integration.
-- Live Preview tunnel.
-- Engineering Criteria Contract with risk-based verification.
-- Contract-bound machine evidence for Strict/Critical criteria.
-- Hosted workspace and self-hosted deployment.
-- English and Russian shipping UI.
+A few product rules are deliberately simple:
 
----
+- a checked Definition of Done item is a claim, not proof;
+- high-risk criteria can require verification evidence before Review;
+- final acceptance is a human action;
+- public widget keys and secret developer credentials are separate capabilities;
+- browser diagnostics follow a minimum-necessary model;
+- production Live Preview is isolated from the account origin;
+- payment redirects are not treated as authoritative settlement events.
 
-## Trust model
-
-VibeUs deliberately does not implement “AI changed code, therefore done.”
-
-Important boundaries include:
-
-- `[x]` is an implementation claim, not proof.
-- Strict/Critical BLOCKER/HIGH criteria require verified evidence before automatic Review.
-- Evidence is bound to the exact criterion contract, adapter, target, result, and verifier provenance.
-- Final acceptance remains a human action.
-- Public widget keys are not treated as secrets.
-- Secret API / ingest tokens are separate credentials.
-- Browser diagnostics follow a minimum-necessary model.
-- Live Preview is isolated from the account origin in production.
-
-The repository includes executable release gates for security, billing, evidence binding, migrations, frontend contracts, casing, builds, CLI behavior, and i18n.
+See [SECURITY.md](SECURITY.md) for vulnerability reporting and [Architecture](docs/ARCHITECTURE.md) for the main trust boundaries.
 
 ---
 
 ## Self-hosting
 
-VibeUs can be run on your own infrastructure.
-
-Fastest local stack from a clean clone:
+From a clean clone:
 
 ```bash
 git clone https://github.com/AlexeyPlaton/VibeUs.git vibeus
@@ -178,31 +143,36 @@ cd ..
 docker compose up -d --build
 ```
 
-Open the web UI at `http://localhost`. The backend API is also exposed directly at `http://localhost:8000`; readiness is available at `http://localhost:8000/ready`.
+Open `http://localhost`. The API is available at `http://localhost:8000`; readiness is `http://localhost:8000/ready`.
+
+The current WebSocket / Live Preview registries keep active connection state in-process, so the backend should run with **one Uvicorn worker** until distributed routing/state is implemented.
 
 See [Self-Hosting VibeUs](docs/SELF_HOSTING.md) before a production deployment.
 
-### Current scaling limitation
-
-The current WebSocket / Live Preview registries keep active connection state in-process. Run the backend with **one Uvicorn worker** until distributed routing/state is implemented.
-
 ---
 
-## International / hosted availability
+## Repository map
 
-The product UI ships in English and Russian.
+```text
+openspec-web/   React app + embeddable widget
+openspec-core/  FastAPI backend + persistence + integrations
+openspec-cli/   local CLI, Markdown sync, MCP and Live Preview client
+quality-gates/  release regression checks
+mcp-server/     MCP-related server tooling
+```
 
-UI language and billing market are separate. Hosted payment methods and paid-plan availability depend on region. The current Legal Center explains the active hosted legal scope; self-hosted use is governed by the applicable repository/component licenses and documentation.
+A shorter system overview is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
 ## Development
 
-Frontend + widget:
+Frontend and widget:
 
 ```bash
 cd openspec-web
 npm ci
+npm test
 npm run build:all
 ```
 
@@ -214,18 +184,26 @@ npm ci
 npm test
 ```
 
-Official release gate:
+Full release checks:
 
 ```bash
 python run_release_gate.py
 ```
 
+The release checks cover backend behavior, migrations, frontend contracts, TypeScript, builds, CLI behavior, security-sensitive invariants and internationalization. See [docs/TESTING.md](docs/TESTING.md) for the shorter developer workflow.
+
+---
+
+## Billing
+
+Hosted paid-plan availability depends on the deployment and approved payment-provider configuration. Provider flags in source code do not prove that a merchant account is approved or enabled.
+
+Self-hosted operators are responsible for the provider, tax and fiscal configuration they enable. See [docs/BILLING.md](docs/BILLING.md).
+
 ---
 
 ## Project status
 
-VibeUs is at the stage where real workflow feedback matters more than adding another large feature.
+VibeUs is in early public-product validation. The priority is learning whether teams keep the feedback → engineering → human-acceptance loop in their real workflow.
 
-If you try it, the most useful feedback is not “looks cool”.
-
-Tell me **where you leave the VibeUs loop and fall back to screenshots, chat, Jira, or a hand-written prompt — and why.**
+If you try it, the most useful feedback is: **where did you leave the VibeUs flow and fall back to screenshots, chat, Jira or a hand-written prompt — and why?**
