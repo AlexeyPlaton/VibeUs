@@ -1,4 +1,4 @@
-export const v8En = {
+export const publicFeedbackEn = {
   public_feedback: {
     title: 'Send feedback',
     subtitle: 'Describe what you noticed. Point to an element only when it helps.',
@@ -26,7 +26,7 @@ export const v8En = {
   },
 };
 
-export const v8Ru = {
+export const publicFeedbackRu = {
   public_feedback: {
     title: 'Сообщить о проблеме или идее',
     subtitle: 'Опишите, что заметили. Если важно конкретное место на странице, просто укажите его.',
