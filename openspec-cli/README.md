@@ -1,20 +1,19 @@
-# VibeUs CLI — Local AI Bridge
+# VibeUs CLI
 
-The VibeUs CLI connects your local AI development environment (Cursor, Claude Code, Windsurf, Antigravity) with VibeUs Cloud, bridging client/visual feedback with local coding agents and engineering contracts.
+The VibeUs CLI keeps project feedback and tasks close to the code.
 
-## Installation & Commands
+Use it to:
 
-Run directly with `npx` (no permanent install needed):
+- sync the project board into `.vibus/TASKS_FOR_AI.md`;
+- run the VibeUs MCP server for local developer/agent workflows;
+- expose a local development server through Live Preview.
+
+## Quick start
+
+Run without a global install:
 
 ```bash
-# Listen for tasks and sync .vibus/TASKS_FOR_AI.md
-npx vibus listen --project <slug>
-
-# Share localhost port securely via Live Preview
-npx vibus share --port 3000 --project <slug>
-
-# Run Model Context Protocol (MCP) server for Cursor / Claude Code
-npx vibus mcp --project <slug>
+npx vibus listen --project <slug> --server https://vibeus.pro
 ```
 
 Or install globally:
@@ -24,33 +23,50 @@ npm install -g vibus
 vibus listen --project <slug>
 ```
 
-## Options
+## Commands
 
-- `--project <slug>` — Your VibeUs project slug
-- `--server <url>` — Server URL (default: `https://vibeus.pro`)
-- `--token <token>` — API token for authentication
+### Listen and sync tasks
 
-The CLI automatically saves your settings to a local `.vibusrc.json` file in your workspace. Subsequent runs can omit flags when configuration is present.
+```bash
+npx vibus listen --project <slug>
+```
 
-## How It Works
+The CLI writes:
 
-1. **Connects** to VibeUs Cloud via WebSocket for real-time task synchronization.
-2. **Fetches** the project board state via REST API.
-3. **Writes** `.vibus/board.json` (raw board data) and `.vibus/TASKS_FOR_AI.md` (formatted, actionable tasks with Definition of Done contracts).
-4. **Watches** for changes made to `.vibus/TASKS_FOR_AI.md` by local developers or AI agents.
-5. **Claims vs Evidence**:
-   - Checking a Definition of Done checkbox (`[x]`) is treated as an **implementation claim**, not proof.
-   - In **Strict** and **Critical** review modes, high-severity and blocker criteria require verified machine receipts (via allowlisted local test adapters like `pytest`, `node_test`, `npm_script`, or `file_exists`) or authenticated human review before automatic advancement to Review status.
-6. **Human Acceptance**:
-   - AI coding agents can implement changes and satisfy machine verifiers, but final acceptance remains a **human reviewer action**.
-7. **Pushes** verified progress and evidence back to VibeUs Cloud in real time.
+```text
+.vibus/
+├── board.json
+└── TASKS_FOR_AI.md
+```
 
-## Integration with AI IDEs
+`TASKS_FOR_AI.md` is plain Markdown so developers and local coding tools can read the same task context.
 
-Direct your AI coding assistant (Cursor, Claude Code, Windsurf, Antigravity) to `.vibus/TASKS_FOR_AI.md`. The agent reads tasks, context (element selector, viewport, route, sanitized stack trace), and the DoD contract, implements the fix, and runs verification commands to provide binding evidence.
+### MCP
+
+```bash
+npx vibus mcp --project <slug>
+```
+
+### Live Preview
+
+```bash
+npx vibus share --port 3000 --project <slug>
+```
+
+## Common options
+
+- `--project <slug>` — VibeUs project slug;
+- `--server <url>` — VibeUs server, default `https://vibeus.pro`;
+- `--token <token>` — developer API token when required.
+
+Workspace settings are saved locally in `.vibusrc.json` so later commands can omit repeated flags.
+
+## Task verification
+
+A checked Definition of Done item is treated as an implementation claim. Depending on the task policy, higher-risk criteria can require verified local evidence before the task advances to Review. Final acceptance remains a human action.
 
 ## Troubleshooting
 
-- Ensure your API token is valid and has `ticket:write` permissions.
-- Verify your network connection to the server URL (`https://vibeus.pro`).
-- Ensure allowlisted verifiers match target test files within your repository root.
+- Check that the project slug and server URL are correct.
+- Check that the API token has the required project capability.
+- If a verifier is used, make sure its target stays inside the repository root and matches an allowed verifier type.

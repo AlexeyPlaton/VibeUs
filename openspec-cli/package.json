@@ -1,7 +1,7 @@
 {
   "name": "vibus",
   "version": "0.1.0",
-  "description": "CLI bridge for VibeUs visual feedback, AI-ready tasks, MCP, verified criteria, and Live Preview",
+  "description": "CLI for syncing VibeUs feedback and engineering tasks with local development workflows",
   "main": "index.js",
   "bin": {
     "vibus": "./index.js"
@@ -12,10 +12,10 @@
     "qa",
     "mcp",
     "ai-agents",
-    "vibe-coding",
+    "bug-tracking",
     "kanban"
   ],
-  "author": "Vibus Team",
+  "author": "VibeUs contributors",
   "type": "module",
   "scripts": {
     "start": "node index.js",

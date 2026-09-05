@@ -1,5 +1,5 @@
-/* V8 visual pass: keep the existing VibeUs language, but make the hero feel like
-   a live context relay rather than a static SaaS template. */
+/* Landing motion layer: keep the VibeUs visual language, but make the hero feel
+   like a live context relay rather than a static SaaS template. */
 
 .vibe-hero {
   isolation: isolate;

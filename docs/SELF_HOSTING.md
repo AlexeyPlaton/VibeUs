@@ -92,7 +92,7 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 There is no required `SECRET_KEY` setting in the current backend configuration; do not invent one from older deployment notes.
 
-Payment providers are also fail-closed. Keep a provider disabled until the corresponding merchant account, credentials, webhook configuration and fiscal/legal setup are actually ready. The canonical hosted international path is prepared for CloudPayments but remains disabled by default.
+Payment adapters are fail-closed in the public templates. Keep every live provider disabled until the operator's merchant account, credentials, webhook behavior and fiscal/legal flow are actually ready and tested. See `docs/BILLING.md`.
 
 See `docs/PRODUCTION_DEPLOYMENT.md` for the production reverse-proxy, TLS and deployment boundary.
 
