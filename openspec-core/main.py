@@ -10,6 +10,9 @@ HttpOnly cookies, widget-manifest verification, runtime ingest endpoints,
 criteria evidence closure, and YooKassa checkout idempotency), so compatibility
 markers below identify those delegated contracts until the scanners are upgraded
 to inspect both modules.
+
+Founder/admin control-plane routes are intentionally NOT mounted in this public
+runtime. The private control plane mounts them on a separate private origin.
 """
 from __future__ import annotations
 
@@ -25,12 +28,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import auth
 import billing_router
-import control_router
-import founder_growth_strategy
-import founder_ops
 import main_legacy as legacy
 import models
-import product_radar
 import schemas
 from database import get_db
 from release_invariants import human_review_transition, install_runtime_invariants
@@ -89,30 +88,9 @@ install_runtime_invariants()
 app = legacy.app
 manager = legacy.manager
 
-# The former Post-MVP roadmap is now mostly implemented in /control/workbench.
-# Keep the existing /api/control/roadmap handler as the single route, but narrow
-# its module-level catalog before the router is copied into the final app. This is
-# more robust than shadowing/duplicating a FastAPI route and keeps the legacy tab
-# truthful: only external/security dependencies that would be unsafe to fake remain.
-control_router.ROADMAP = [
-    {
-        "area": "Security",
-        "title": "Platform-admin passkey / MFA",
-        "description": "Blocked until VibeUs has a real WebAuthn/passkey enrollment, verification, recovery and revocation lifecycle. A UI toggle is not MFA.",
-    },
-    {
-        "area": "Revenue",
-        "title": "Provider-side refund and recurring cancellation adapters",
-        "description": "Blocked until the approved production payment provider and its exact refund/subscription/fiscal semantics are verified. Local ledger mutation is never presented as a remote refund.",
-    },
-]
-
+# Public customer runtime only. Founder/admin routers are mounted by the private
+# control-plane service and must never be registered here.
 app.include_router(billing_router.router)
-app.include_router(control_router.router)
-app.include_router(product_radar.router)
-app.include_router(founder_ops.router)
-app.include_router(founder_ops.runtime_router)
-app.include_router(founder_growth_strategy.router)
 
 # Seed proxy-visible values so old imports keep working as before.
 async_session = legacy.async_session
