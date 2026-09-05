@@ -61,7 +61,6 @@ export function OnboardingGuideModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="flex h-[90vh] w-full max-w-4xl flex-col rounded-3xl border border-white/10 bg-slate-900 shadow-2xl overflow-hidden">
-        {/* Header */}
         <header className="flex items-center justify-between border-b border-white/10 px-6 py-4 bg-slate-950/70">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
@@ -86,7 +85,6 @@ export function OnboardingGuideModal({
           </button>
         </header>
 
-        {/* Step Navigation Bar */}
         <div className="grid grid-cols-3 border-b border-white/10 bg-slate-950/40 text-xs">
           <button
             onClick={() => setActiveStep(1)}
@@ -123,7 +121,7 @@ export function OnboardingGuideModal({
               2
             </span>
             <Activity className="h-4 w-4" />
-            <span>Runtime Bridge</span>
+            <span>{tr('v7.onboarding.tabs.runtime')}</span>
           </button>
 
           <button
@@ -146,7 +144,6 @@ export function OnboardingGuideModal({
           </button>
         </div>
 
-        {/* Step Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {activeStep === 1 && (
             <div className="space-y-6">
@@ -158,7 +155,6 @@ export function OnboardingGuideModal({
                 </p>
               </div>
 
-              {/* Option A: CLI Tunnel */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-300">{tr('v7.onboarding.step1.option_a')}</span>
@@ -180,7 +176,6 @@ export function OnboardingGuideModal({
                 </p>
               </div>
 
-              {/* Option B: HTML Script */}
               <div className="space-y-3 pt-4 border-t border-white/10">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-300">{tr('v7.onboarding.step1.option_b')}</span>
                 <p className="text-xs text-slate-400">
@@ -287,7 +282,6 @@ app.add_middleware(
                 </p>
               </div>
 
-              {/* vibus listen */}
               <div className="space-y-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-300">{tr('v7.onboarding.step3.sync_title')}</span>
                 <p className="text-xs text-slate-400">{tr('v7.onboarding.step3.run_root')}</p>
@@ -305,7 +299,6 @@ app.add_middleware(
                   <code>.vibus/TASKS_FOR_AI.md</code>{tr('v7.onboarding.step3.files_suffix')}</p>
               </div>
 
-              {/* MCP Server */}
               <div className="space-y-3 pt-4 border-t border-white/10">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-300">{tr('v7.onboarding.step3.mcp_title')}</span>
                 <p className="text-xs text-slate-400">{tr('v7.onboarding.step3.mcp_run')}</p>
@@ -324,7 +317,6 @@ app.add_middleware(
           )}
         </div>
 
-        {/* Footer */}
         <footer className="flex items-center justify-between border-t border-white/10 px-6 py-4 bg-slate-950/70">
           <div className="text-xs text-slate-400">
             {activeStep === 1 && tr('v7.onboarding.footer.next_crashes')}

@@ -9,7 +9,6 @@ import {
   Copy,
   Eye,
   GitBranch,
-  
   MousePointer2,
   Radio,
   ShieldCheck,
@@ -42,7 +41,7 @@ const FAQ = [
 export function LandingPage() {
   useEffect(() => {
     document.title = tr('v7.landing.meta.title');
-    const description = document.querySelector('meta[name=\"description\"]');
+    const description = document.querySelector('meta[name="description"]');
     description?.setAttribute('content', tr('v7.landing.meta.description'));
   }, []);
   const [copied, setCopied] = useState(false);
@@ -128,7 +127,7 @@ export function LandingPage() {
           <a className="vibe-brand" href="#top" aria-label={tr('v7.landing.brand_home')}>
             <span className="vibe-brand-mark"><i /></span>
             <span>VibeUs</span>
-            <small>context relay</small>
+            <small>{tr('landing_chrome.brand_tagline')}</small>
           </a>
 
           <nav className="vibe-nav-links" aria-label={tr('v7.landing.primary_navigation')}>
@@ -142,7 +141,7 @@ export function LandingPage() {
             <LanguageSwitcher compact />
             <a
               className="vibe-icon-link"
-              href="https://github.com/AlexeyPlaton/Vibus"
+              href="https://github.com/AlexeyPlaton/VibeUs"
               target="_blank"
               rel="noopener noreferrer"
               aria-label={tr('v7.landing.github_label')}
@@ -159,7 +158,7 @@ export function LandingPage() {
         <section className="vibe-hero" id="top">
           <div className="vibe-shell vibe-hero-grid">
             <div>
-              <div className="vibe-eyebrow"><span className="vibe-live-dot" /> VISUAL FEEDBACK + RUNTIME ERRORS → AI-READY WORK</div>
+              <div className="vibe-eyebrow"><span className="vibe-live-dot" /> {tr('landing_chrome.eyebrow')}</div>
               <h1>{tr('v7.landing.hero.title_main')}<br /><span className="quiet">{tr('v7.landing.hero.title_quiet')}</span></h1>
               <p className="vibe-hero-copy">{tr('v7.landing.hero.copy')}</p>
               <div className="vibe-hero-actions">
@@ -172,7 +171,7 @@ export function LandingPage() {
               <div className="vibe-microproof" aria-label={tr('v7.landing.hero.properties')}>
                 <span><Check size={13} />{tr('v7.landing.hero.free_project')}</span>
                 <span><Check size={13} />{tr('v7.landing.hero.no_card')}</span>
-                <span><Check size={13} /> self-hostable</span>
+                <span><Check size={13} />{tr('landing_chrome.self_hosted')}</span>
               </div>
               <p className="vibe-hero-manifest">
                 <em>{tr('v7.landing.hero.manifest')}</em>
@@ -184,10 +183,10 @@ export function LandingPage() {
                 <span className="vibe-orbit-ring" /><span className="vibe-orbit-ring" />
                 <span className="vibe-orbit-ring" /><span className="vibe-orbit-ring" />
                 <div className="vibe-orbit-core"><span>V</span></div>
-                <div className="vibe-orbit-label ol-1"><b>Human</b>{tr('v7.landing.hero.here')}</div>
-                <div className="vibe-orbit-label ol-2"><b>Context</b> selector + viewport</div>
-                <div className="vibe-orbit-label ol-3"><b>Runtime</b> stack + request ID</div>
-                <div className="vibe-orbit-label ol-4"><b>Review</b>{tr('v7.landing.hero.human_accepts')}</div>
+                <div className="vibe-orbit-label ol-1"><b>{tr('landing_chrome.human')}</b>{tr('v7.landing.hero.here')}</div>
+                <div className="vibe-orbit-label ol-2"><b>{tr('landing_chrome.context')}</b> {tr('landing_chrome.context_detail')}</div>
+                <div className="vibe-orbit-label ol-3"><b>{tr('landing_chrome.runtime')}</b> {tr('landing_chrome.runtime_detail')}</div>
+                <div className="vibe-orbit-label ol-4"><b>{tr('landing_chrome.review')}</b>{tr('v7.landing.hero.human_accepts')}</div>
               </div>
             </div>
           </div>
@@ -229,10 +228,10 @@ export function LandingPage() {
               <span className="vibe-dest-arrow">↓</span>
               <p>{tr('v7.landing.inputs.destination')}</p>
               <div className="vibe-dest-tags">
-                <span>Kanban</span>
-                <span>Markdown (TASKS_FOR_AI.md)</span>
-                <span>MCP Server</span>
-                <span>AI IDE (Cursor, Claude Code, Windsurf)</span>
+                <span>{tr('landing_chrome.kanban')}</span>
+                <span>{tr('landing_chrome.task_file')}</span>
+                <span>{tr('landing_chrome.mcp')}</span>
+                <span>{tr('landing_chrome.ai_ide')}</span>
               </div>
             </div>
           </div>
@@ -240,7 +239,7 @@ export function LandingPage() {
 
         <section id="loop" className="vibe-section">
           <div className="vibe-shell">
-            <div className="vibe-kicker">The Vibe Loop</div>
+            <div className="vibe-kicker">{tr('landing_chrome.loop_kicker')}</div>
             <h2 className="vibe-section-title">{tr('v7.landing.loop.title')}</h2>
             <p className="vibe-section-lead">{tr('v7.landing.loop.lead')}</p>
             <div className="vibe-loop-grid">
@@ -262,8 +261,8 @@ export function LandingPage() {
               <p className="vibe-section-lead">{tr('v7.landing.demo.lead')}</p>
               <div className="vibe-demo-points">
                 <div><span>1</span><p><b>{tr('v7.landing.demo.locator_title')}</b>{tr('v7.landing.demo.locator_copy')}</p></div>
-                <div><span>2</span><p><b>Minimum necessary</b>{tr('v7.landing.demo.minimum_copy')}</p></div>
-                <div><span>3</span><p><b>DoD → Review</b>{tr('v7.landing.demo.review_copy')}</p></div>
+                <div><span>2</span><p><b>{tr('landing_chrome.minimum')}</b>{tr('v7.landing.demo.minimum_copy')}</p></div>
+                <div><span>3</span><p><b>{tr('landing_chrome.dod_review')}</b>{tr('v7.landing.demo.review_copy')}</p></div>
               </div>
               <button className="vibe-btn vibe-btn-primary" type="button" onClick={openWidget}><Eye size={17} />{tr('v7.landing.demo.open_widget')}</button>
             </div>
@@ -276,7 +275,7 @@ export function LandingPage() {
                   <span className="vibe-demo-caption">{tr('v7.landing.demo.select_element')}</span>
                   <div className="vibe-fake-title" /><div className="vibe-fake-sub" />
                   <div className="vibe-fake-cards">
-                    <div className="vibe-fake-card"><small>FREE</small><b>0 ₽</b><span /></div>
+                    <div className="vibe-fake-card"><small>{tr('landing_chrome.free_label')}</small><b>0 ₽</b><span /></div>
                     <div className="vibe-fake-card target" data-vibe-demo-target="solo-card"><small>SOLO</small><b>{soloPrice}</b><span /><button type="button">{tr('v7.landing.nav.start')}</button></div>
                     <div className="vibe-fake-card"><small>STUDIO</small><b>{studioPrice}</b><span /></div>
                   </div>
@@ -289,16 +288,16 @@ export function LandingPage() {
         <section className="vibe-section">
           <div className="vibe-shell vibe-split">
             <article className="vibe-big-card">
-              <span className="vibe-tag">Local-first DX</span>
+              <span className="vibe-tag">{tr('landing_chrome.local_tag')}</span>
               <h2>{tr('v7.landing.local.title')}</h2>
               <p>{tr('v7.landing.local.copy')}</p>
               <div className="vibe-terminal">
-                <div className="vibe-terminal-head"><Terminal size={14} /><span>terminal</span><button onClick={copyCli} type="button"><Copy size={13} /> {copied ? tr('v7.landing.common.copied') : tr('v7.landing.common.copy')}</button></div>
+                <div className="vibe-terminal-head"><Terminal size={14} /><span>{tr('landing_chrome.terminal')}</span><button onClick={copyCli} type="button"><Copy size={13} /> {copied ? tr('v7.landing.common.copied') : tr('v7.landing.common.copy')}</button></div>
                 <pre>{cli}</pre>
               </div>
             </article>
             <article className="vibe-big-card vibe-philosophy">
-              <span className="vibe-tag">What VibeUs is not</span>
+              <span className="vibe-tag">{tr('landing_chrome.not_pm_tag')}</span>
               <h2>{tr('v7.landing.not_pm.title')}</h2>
               <p>{tr('v7.landing.not_pm.copy')}</p>
               <div className="vibe-not-list">
@@ -314,14 +313,14 @@ export function LandingPage() {
 
         <section id="security" className="vibe-section">
           <div className="vibe-shell">
-            <div className="vibe-kicker">Trust is a feature</div>
+            <div className="vibe-kicker">{tr('landing_chrome.trust_kicker')}</div>
             <h2 className="vibe-section-title">{tr('v7.landing.security.title')}</h2>
             <div className="vibe-security-grid">
               <div className="vibe-security-list">
-                <div><ShieldCheck /><span><b>Preview isolation</b><small>{tr('v7.landing.security.preview')}</small></span><em>origin boundary</em></div>
-                <div><GitBranch /><span><b>Scoped capabilities</b><small>{tr('v7.landing.security.capabilities')}</small></span><em>least privilege</em></div>
-                <div><Radio /><span><b>Telemetry opt-in</b><small>{tr('v7.landing.security.telemetry')}</small></span><em>minimum necessary</em></div>
-                <div><UserCheck /><span><b>Human acceptance</b><small>{tr('v7.landing.security.human')}</small></span><em>review gate</em></div>
+                <div><ShieldCheck /><span><b>{tr('landing_chrome.preview_isolation')}</b><small>{tr('v7.landing.security.preview')}</small></span><em>{tr('landing_chrome.origin_boundary')}</em></div>
+                <div><GitBranch /><span><b>{tr('landing_chrome.scoped_capabilities')}</b><small>{tr('v7.landing.security.capabilities')}</small></span><em>{tr('landing_chrome.least_privilege')}</em></div>
+                <div><Radio /><span><b>{tr('landing_chrome.telemetry_opt_in')}</b><small>{tr('v7.landing.security.telemetry')}</small></span><em>{tr('landing_chrome.minimum_necessary')}</em></div>
+                <div><UserCheck /><span><b>{tr('landing_chrome.human_acceptance')}</b><small>{tr('v7.landing.security.human')}</small></span><em>{tr('landing_chrome.review_gate')}</em></div>
               </div>
               <aside className="vibe-trust-card">
                 <Sparkles size={20} />
@@ -336,7 +335,7 @@ export function LandingPage() {
         <section id="founding" className="vibe-section vibe-founding-section">
           <div className="vibe-shell">
             <div className="vibe-founding-card">
-              <div className="vibe-kicker"><Sparkles size={14} /> Founding access</div>
+              <div className="vibe-kicker"><Sparkles size={14} /> {tr('landing_chrome.founding_kicker')}</div>
               <h2>{tr('v7.landing.founding.title')}</h2>
               <p className="vibe-founding-text">
                 {tr('v7.landing.founding.question')}
@@ -374,11 +373,11 @@ export function LandingPage() {
             <div className="vibe-kicker">{tr('v7.landing.pricing.kicker')}</div>
             <h2 className="vibe-section-title">{tr('v7.landing.pricing.title')}</h2>
             <p className="vibe-section-lead">{tr('v7.landing.pricing.lead', { days: periodDays })}</p>
-            {globalVisible && <div className="vibe-market-switch" aria-label={tr('v7.landing.pricing.region')}><button type="button" className={market === 'ru' ? 'active' : ''} onClick={() => setPricingMarket('ru')}>{tr('v7.landing.pricing.russia')}</button><button type="button" className={market === 'global' ? 'active' : ''} onClick={() => setPricingMarket('global')}>International · $</button></div>}
+            {globalVisible && <div className="vibe-market-switch" aria-label={tr('v7.landing.pricing.region')}><button type="button" className={market === 'ru' ? 'active' : ''} onClick={() => setPricingMarket('ru')}>{tr('v7.landing.pricing.russia')}</button><button type="button" className={market === 'global' ? 'active' : ''} onClick={() => setPricingMarket('global')}>{tr('landing_chrome.international')}</button></div>}
             <div className="vibe-pricing">
-              <article className="vibe-price-card"><span>FREE</span><h3>0</h3><p>{tr('v7.landing.pricing.free_copy')}</p><ul><li>{tr('v7.landing.pricing.one_project')}</li><li>{tr('v7.landing.pricing.basic_loop')}</li><li>Powered by VibeUs</li></ul><Link className="vibe-btn vibe-btn-secondary" to={`/create?market=${market}`}>{tr('v7.landing.pricing.try')}</Link></article>
-              <article className="vibe-price-card featured"><i>EARLY ACCESS</i><span>SOLO</span><h3>{soloPrice} <small>{tr('v7.landing.pricing.period', { days: periodDays })}</small></h3><p>{tr('v7.landing.pricing.solo_copy')}</p><ul><li>{tr('v7.landing.pricing.ten_projects')}</li><li>Live Preview + IDE bridge</li><li>Runtime Error Bridge</li></ul><Link className="vibe-btn vibe-btn-primary" to={`/create?plan=solo&market=${market}`}>{tr('v7.landing.pricing.choose_solo')}</Link></article>
-              <article className="vibe-price-card"><span>STUDIO</span><h3>{studioPrice} <small>{tr('v7.landing.pricing.period', { days: periodDays })}</small></h3><p>{tr('v7.landing.pricing.studio_copy')}</p><ul><li>{tr('v7.landing.pricing.fifty_projects')}</li><li>{tr('v7.landing.pricing.team_roles')}</li><li>Runtime + AI workflow</li></ul><Link className="vibe-btn vibe-btn-secondary" to={`/create?plan=studio&market=${market}`}>{tr('v7.landing.pricing.choose_studio')}</Link></article>
+              <article className="vibe-price-card"><span>{tr('landing_chrome.free_label')}</span><h3>0</h3><p>{tr('v7.landing.pricing.free_copy')}</p><ul><li>{tr('v7.landing.pricing.one_project')}</li><li>{tr('v7.landing.pricing.basic_loop')}</li><li>{tr('landing_chrome.powered_by')}</li></ul><Link className="vibe-btn vibe-btn-secondary" to={`/create?market=${market}`}>{tr('v7.landing.pricing.try')}</Link></article>
+              <article className="vibe-price-card featured"><i>{tr('landing_chrome.early_access')}</i><span>SOLO</span><h3>{soloPrice} <small>{tr('v7.landing.pricing.period', { days: periodDays })}</small></h3><p>{tr('v7.landing.pricing.solo_copy')}</p><ul><li>{tr('v7.landing.pricing.ten_projects')}</li><li>{tr('landing_chrome.live_preview_ide')}</li><li>{tr('landing_chrome.runtime_bridge')}</li></ul><Link className="vibe-btn vibe-btn-primary" to={`/create?plan=solo&market=${market}`}>{tr('v7.landing.pricing.choose_solo')}</Link></article>
+              <article className="vibe-price-card"><span>STUDIO</span><h3>{studioPrice} <small>{tr('v7.landing.pricing.period', { days: periodDays })}</small></h3><p>{tr('v7.landing.pricing.studio_copy')}</p><ul><li>{tr('v7.landing.pricing.fifty_projects')}</li><li>{tr('v7.landing.pricing.team_roles')}</li><li>{tr('landing_chrome.runtime_ai')}</li></ul><Link className="vibe-btn vibe-btn-secondary" to={`/create?plan=studio&market=${market}`}>{tr('v7.landing.pricing.choose_studio')}</Link></article>
             </div>
             <p className="vibe-price-legal">{tr('v7.landing.pricing.legal')}</p>
           </div>
@@ -386,14 +385,14 @@ export function LandingPage() {
 
         <section className="vibe-section" id="faq">
           <div className="vibe-shell">
-            <div className="vibe-kicker">FAQ</div><h2 className="vibe-section-title">{tr('v7.landing.faq.title')}</h2>
+            <div className="vibe-kicker">{tr('landing_chrome.faq_kicker')}</div><h2 className="vibe-section-title">{tr('v7.landing.faq.title')}</h2>
             <div className="vibe-faq">{FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
           </div>
         </section>
 
         <section className="vibe-final">
           <div className="vibe-shell vibe-final-inner">
-            <div><div className="vibe-kicker">Vibe is shared context.</div><h2>{tr('v7.landing.final.title')}</h2></div>
+            <div><div className="vibe-kicker">{tr('landing_chrome.final_kicker')}</div><h2>{tr('v7.landing.final.title')}</h2></div>
             <div className="vibe-final-actions"><button className="vibe-btn vibe-btn-secondary" onClick={openWidget} type="button"><Zap size={17} />{tr('v7.landing.final.open_widget')}</button><Link className="vibe-btn vibe-btn-primary" to="/create">{tr('v7.landing.final.create')}<ArrowRight size={16} /></Link></div>
           </div>
         </section>
@@ -403,12 +402,11 @@ export function LandingPage() {
         <div className="vibe-shell">
           <div className="vibe-footer-brand"><span className="vibe-brand-mark"><i /></span><b>VibeUs</b><span>© 2026</span></div>
           <div className="vibe-footer-links">
-            <Link to="/legal/offer">{tr('v7.legal.links.offer')}</Link><Link to="/legal/privacy">{tr('v7.legal.links.privacy')}</Link><Link to="/legal/dpa">{tr('v7.legal.links.dpa')}</Link><Link to="/legal/refunds">{tr('v7.legal.links.refunds')}</Link><a href="mailto:security@vibeus.pro">Security</a>
+            <Link to="/legal/offer">{tr('v7.legal.links.offer')}</Link><Link to="/legal/privacy">{tr('v7.legal.links.privacy')}</Link><Link to="/legal/dpa">{tr('v7.legal.links.dpa')}</Link><Link to="/legal/refunds">{tr('v7.legal.links.refunds')}</Link><a href="mailto:security@vibeus.pro">{tr('landing_chrome.security_link')}</a>
           </div>
         </div>
       </footer>
 
-      {/* Real product widget. Public key is an identifier, not a secret; configure it in deployment. */}
       <VibusWidgetUI
         projectId={demoProject}
         serverUrl={serverUrl}

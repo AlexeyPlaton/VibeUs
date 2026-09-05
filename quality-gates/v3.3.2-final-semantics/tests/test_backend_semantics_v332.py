@@ -5,6 +5,19 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from conftest import read_text, function_block, class_block
 
+
+def effective_main_source(project_root: Path) -> str:
+    """Return the production FastAPI surface after the main/main_legacy split.
+
+    ``main.py`` is now the release-invariant wrapper while the historical route
+    implementations remain in ``main_legacy.py`` and are imported into the same
+    FastAPI application. Final-semantics source checks must inspect both files or
+    they can report missing WebSocket/MCP/tunnel behavior that is live at runtime.
+    """
+    core = project_root / 'openspec-core'
+    return read_text(core / 'main.py') + '\n\n' + read_text(core / 'main_legacy.py')
+
+
 async def _fresh_db(core_modules):
     models = core_modules['models']
     engine = create_async_engine('sqlite+aiosqlite:///:memory:')
@@ -126,7 +139,7 @@ async def test_03_discussion_conversion_idempotent_linkage_and_single_revision(c
 
 
 def test_04_ws_ticket_mutations_advance_ticket_revision(project_root: Path):
-    src = read_text(project_root/'openspec-core'/'main.py')
+    src = effective_main_source(project_root)
     start = src.find("@app.websocket('/ws/sync/{project_slug}')")
     if start < 0:
         start = src.find('async def websocket_endpoint')
@@ -146,7 +159,7 @@ def test_04_ws_ticket_mutations_advance_ticket_revision(project_root: Path):
 
 
 def test_05_duplicate_ws_ack_carries_authoritative_revision(project_root: Path):
-    src = read_text(project_root/'openspec-core'/'main.py')
+    src = effective_main_source(project_root)
     matches = list(re.finditer(r'await\s+websocket\.send_json\(\{(?P<body>[\s\S]{0,700}?\"duplicate\"\s*:\s*True[\s\S]{0,700}?)\}\)', src))
     assert matches, 'Missing duplicate WS idempotency ACK path'
     body = matches[0].group('body')
@@ -156,7 +169,7 @@ def test_05_duplicate_ws_ack_carries_authoritative_revision(project_root: Path):
 
 
 def test_06_feature_flags_actually_gate_risky_routes(project_root: Path):
-    src = read_text(project_root/'openspec-core'/'main.py')
+    src = effective_main_source(project_root)
     mcp = function_block(src, 'async def execute_mcp_tool(')
     tunnel = function_block(src, 'async def create_tunnel_session(')
     assert 'enable_mcp_write' in mcp, 'ENABLE_MCP_WRITE is validated in settings but execute_mcp_tool does not enforce it'
@@ -166,7 +179,7 @@ def test_06_feature_flags_actually_gate_risky_routes(project_root: Path):
 
 
 def test_07_tunnel_forever_is_not_silently_seven_days(project_root: Path):
-    main = read_text(project_root/'openspec-core'/'main.py')
+    main = effective_main_source(project_root)
     models = read_text(project_root/'openspec-core'/'models.py')
     block = function_block(main, 'async def create_tunnel_session(')
     # Accept either explicit rejection of forever for live tunnels, or true nullable/no-expiry semantics.

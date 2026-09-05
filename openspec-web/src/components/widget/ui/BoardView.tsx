@@ -1,9 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { KanbanColumn } from './KanbanColumn';
-import { 
-  CheckCircle2, FolderPlus, Settings2, Sparkles, Filter, Plus, 
-  ArchiveRestore, MessageSquareQuote, CheckCheck, Layers, LayoutGrid, X, Check, Trash2
-} from 'lucide-react';
+import { ArchiveRestore, Check, Filter, Layers, Plus, RotateCcw, Search, X } from 'lucide-react';
 
 export const BoardView = ({ state }: { state: any }) => {
   const {
@@ -11,6 +8,7 @@ export const BoardView = ({ state }: { state: any }) => {
     activeSpecFilter, setActiveSpecFilter,
     handleAddBoard, handleDeleteBoard,
     showArchivedDone, setShowArchivedDone,
+    searchQuery, setSearchQuery,
     boardData, activeColumns, getColumnLabel,
     expandedTicketDoD, setExpandedTicketDoD, copiedId,
     addingDoDTicketId, setAddingDoDTicketId, newDoDLabel,
@@ -18,26 +16,37 @@ export const BoardView = ({ state }: { state: any }) => {
     handleToggleArchiveTicket, setDeletingTicket, handleToggleChecklist,
     handleDeleteDoDItem, handleAddCustomDoD, handleAcceptTicket,
     setReworkTicketId, setReworkComment, handleStatusChange,
-    handleArchiveDoneTickets, backlogCount, inProgressTickets,
-    inReviewTickets, activeTickets, allTickets, setIsManagingColumns,
+    handleArchiveDoneTickets, allTickets,
     canWrite, canReview,
-    handleAddTicket, handleAddColumn, t18n
+    handleAddTicket, handleAddColumn, t18n,
   } = state;
 
   const [isCreatingColumn, setIsCreatingColumn] = useState(false);
   const [inlineColumnTitle, setInlineColumnTitle] = useState('');
-
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
   const [inlineBoardTitle, setInlineBoardTitle] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const customBoards = boardData.custom_boards || boardData.boards || [];
+  const normalizedSearch = String(searchQuery || '').trim().toLowerCase();
+  const currentBoard = activeBoardId && activeBoardId !== 'all'
+    ? customBoards.find((board: any) => board.id === activeBoardId)
+    : null;
+  const activeSpecNodeIds = new Set<string>(
+    activeSpecFilter && activeSpecFilter !== 'all'
+      ? [
+          activeSpecFilter,
+          ...boardData.nodes
+            .filter((node: any) => node.parent_id === activeSpecFilter)
+            .map((node: any) => node.id),
+        ]
+      : [],
+  );
 
   const handleInlineColumnSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inlineColumnTitle.trim()) return;
-    if (handleAddColumn) {
-      handleAddColumn(e, inlineColumnTitle.trim());
-    }
+    handleAddColumn?.(e, inlineColumnTitle.trim());
     setInlineColumnTitle('');
     setIsCreatingColumn(false);
   };
@@ -45,74 +54,142 @@ export const BoardView = ({ state }: { state: any }) => {
   const handleInlineBoardSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inlineBoardTitle.trim()) return;
-    if (handleAddBoard) {
-      handleAddBoard(inlineBoardTitle.trim());
-    }
+    handleAddBoard?.(inlineBoardTitle.trim());
     setInlineBoardTitle('');
     setIsCreatingBoard(false);
   };
 
+  const matchesSearch = (ticket: any) => {
+    if (!normalizedSearch) return true;
+    const haystack = [
+      ticket.key,
+      ticket.id,
+      ticket.title,
+      ticket.summary,
+      ticket.assignee,
+      ...(Array.isArray(ticket.tags) ? ticket.tags : []),
+    ].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(normalizedSearch);
+  };
+
+  const matchesScope = (ticket: any) => {
+    if (activeBoardId && activeBoardId !== 'all') {
+      const inBoard = ticket.board_id === activeBoardId
+        || Boolean(currentBoard && ticket.tags && ticket.tags.includes(currentBoard.title));
+      if (!inBoard) return false;
+    }
+
+    if (activeSpecFilter && activeSpecFilter !== 'all') {
+      const nodeId = ticket.node_id || 'general';
+      if (!activeSpecNodeIds.has(nodeId)) return false;
+    }
+
+    if (!showArchivedDone && ticket.is_archived) return false;
+    return true;
+  };
+
+  const scopedTickets = allTickets.filter((ticket: any) => matchesScope(ticket));
+  const visibleTickets = normalizedSearch
+    ? scopedTickets.filter((ticket: any) => matchesSearch(ticket))
+    : scopedTickets;
+  const hasActiveFilters = Boolean(
+    normalizedSearch
+    || (activeSpecFilter && activeSpecFilter !== 'all')
+    || (activeBoardId && activeBoardId !== 'all')
+    || showArchivedDone,
+  );
+  const filteringEmptyState = Boolean(normalizedSearch || (activeSpecFilter && activeSpecFilter !== 'all'));
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setActiveSpecFilter('all');
+    setActiveBoardId('all');
+    setShowArchivedDone(false);
+    searchInputRef.current?.focus();
+  };
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTyping = Boolean(
+        target?.closest('input, textarea, select, [contenteditable="true"]'),
+      );
+      const isSearchShortcut = event.key === '/'
+        || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k');
+
+      if (isSearchShortcut && !isTyping) {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      if (event.key === 'Escape' && document.activeElement === searchInputRef.current && normalizedSearch) {
+        event.preventDefault();
+        setSearchQuery('');
+      }
+    };
+
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [normalizedSearch, setSearchQuery]);
+
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-transparent overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* BOARDS SELECTOR BAR & SPEC/ARCHIVE FILTERS */}
-      <div className="pb-3 mb-2 flex items-center justify-between gap-3 overflow-x-auto shrink-0 text-xs flex-wrap sm:flex-nowrap">
-        {/* Left: Task Boards Switcher */}
-        <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-2xl border border-white/[0.08] min-w-0">
-          {/* Unified cross-cutting board */}
+      <div className="enterprise-board-toolbar mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-3 text-xs xl:flex-nowrap">
+        <div className="enterprise-board-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-lg border border-white/[0.08] bg-slate-900/80 p-1">
           <button
+            type="button"
             onClick={() => setActiveBoardId('all')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeBoardId === 'all' 
-                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30' 
-                : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+              activeBoardId === 'all'
+                ? 'bg-indigo-600 text-white'
+                : 'text-slate-400 hover:bg-white/[0.04] hover:text-white'
             }`}
           >
-            <Layers className="w-3.5 h-3.5 text-indigo-300" />
+            <Layers className="h-3.5 w-3.5" />
             <span>{t18n('v7.board.cross_board')}</span>
-            <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${activeBoardId === 'all' ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-slate-400'}`}>
-              {allTickets.filter((t: any) => !t.is_archived).length}
+            <span className="rounded px-1.5 py-0.5 text-[9px] tabular-nums opacity-75">
+              {allTickets.filter((ticket: any) => !ticket.is_archived).length}
             </span>
           </button>
 
-          {/* Custom Task Boards */}
           {customBoards.map((board: any) => {
             const isSelected = activeBoardId === board.id;
-            const boardTicketsCount = allTickets.filter((t: any) => !t.is_archived && (t.board_id === board.id || (t.tags && t.tags.includes(board.title)))).length;
+            const count = allTickets.filter((ticket: any) => !ticket.is_archived && (
+              ticket.board_id === board.id || (ticket.tags && ticket.tags.includes(board.title))
+            )).length;
             return (
-              <div key={board.id} className="flex items-center group">
+              <div key={board.id} className="group flex items-center">
                 <button
+                  type="button"
                   onClick={() => setActiveBoardId(board.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                    isSelected 
-                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30' 
-                      : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                    isSelected
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-slate-400 hover:bg-white/[0.04] hover:text-white'
                   }`}
                 >
                   <span>{board.title}</span>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-slate-400'}`}>
-                    {boardTicketsCount}
-                  </span>
+                  <span className="rounded px-1 py-0.5 text-[9px] tabular-nums opacity-70">{count}</span>
                 </button>
                 {canWrite && (
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm(t18n('v7.board.delete_board_confirm', { title: board.title }))) {
-                        handleDeleteBoard(board.id);
-                      }
+                      if (confirm(t18n('v7.board.delete_board_confirm', { title: board.title }))) handleDeleteBoard(board.id);
                     }}
                     title={t18n('v7.board.delete_board')}
-                    className="w-5 h-5 ml-0.5 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    className="ml-0.5 flex h-5 w-5 items-center justify-center rounded text-slate-500 opacity-0 transition-opacity hover:bg-rose-500/10 hover:text-rose-400 group-hover:opacity-100 group-focus-within:opacity-100"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="h-3 w-3" />
                   </button>
                 )}
               </div>
             );
           })}
 
-          {/* Inline Create Custom Board */}
           {canWrite && (isCreatingBoard ? (
             <form onSubmit={handleInlineBoardSubmit} className="flex items-center gap-1 pl-1">
               <input
@@ -127,104 +204,103 @@ export const BoardView = ({ state }: { state: any }) => {
                   }
                 }}
                 placeholder={t18n('v7.board.board_name')}
-                className="bg-slate-950 border border-indigo-500/50 rounded-xl px-2.5 py-1 text-xs text-white placeholder:text-slate-500 outline-none w-32"
+                className="w-32 rounded-md border border-indigo-500/40 bg-slate-950 px-2 py-1 text-[11px] text-white outline-none placeholder:text-slate-500"
               />
-              <button
-                type="submit"
-                className="p-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs cursor-pointer shadow-xs"
-              >
-                <Check className="w-3.5 h-3.5" />
-              </button>
+              <button type="submit" className="rounded-md bg-indigo-600 p-1 text-white hover:bg-indigo-500"><Check className="h-3.5 w-3.5" /></button>
               <button
                 type="button"
-                onClick={() => {
-                  setIsCreatingBoard(false);
-                  setInlineBoardTitle('');
-                }}
-                className="p-1 text-slate-400 hover:text-white rounded-lg text-xs cursor-pointer"
+                onClick={() => { setIsCreatingBoard(false); setInlineBoardTitle(''); }}
+                className="rounded-md p-1 text-slate-400 hover:bg-white/[0.04] hover:text-white"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </form>
           ) : (
             <button
+              type="button"
               onClick={() => setIsCreatingBoard(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-medium text-slate-400 hover:text-indigo-300 hover:bg-white/[0.04] transition-all cursor-pointer whitespace-nowrap text-[11px]"
+              className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 text-[10px] font-medium text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-slate-300"
               title={t18n('v7.board.create_board_title')}
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="h-3.5 w-3.5" />
               <span>{t18n('v7.board.board')}</span>
             </button>
           ))}
         </div>
 
-        {/* Right: Spec Section Filter & Archive Toggle */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Optional Specification Tree Filter */}
-          <div className="flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-xl border border-white/[0.08] text-xs">
-            <Filter className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+        <div className="enterprise-board-controls flex shrink-0 items-center gap-1.5">
+          <label className="enterprise-board-search flex h-8 w-48 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-slate-900 px-2.5 focus-within:border-indigo-500/40 sm:w-56">
+            <Search className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <input
+              ref={searchInputRef}
+              type="search"
+              value={searchQuery || ''}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t18n('v7.board.search_tasks')}
+              aria-label={t18n('v7.board.search_tasks')}
+              className="min-w-0 flex-1 bg-transparent text-[11px] text-slate-200 outline-none placeholder:text-slate-500"
+            />
+            <kbd
+              className="enterprise-shortcut-key hidden rounded border border-white/[0.08] px-1 py-0.5 font-mono text-[9px] font-medium text-slate-500 sm:inline"
+              title={t18n('v7.board.search_shortcut')}
+            >/</kbd>
+          </label>
+
+          <div className="enterprise-board-filter flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-slate-900 px-2.5">
+            <Filter className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             <select
               value={activeSpecFilter || 'all'}
               onChange={(e) => setActiveSpecFilter(e.target.value)}
-              style={{ backgroundColor: '#0f172a', color: '#f8fafc' }}
-              className="bg-slate-900 text-slate-100 text-xs font-semibold outline-none cursor-pointer pr-1 border-0"
+              className="max-w-40 border-0 bg-transparent text-[11px] font-medium text-slate-300 outline-none"
             >
-              <option value="all" style={{ backgroundColor: '#0f172a', color: '#f8fafc' }} className="bg-slate-900 text-white">{t18n('v7.board.all_spec_sections')}</option>
+              <option value="all">{t18n('v7.board.all_spec_sections')}</option>
               {boardData.nodes.map((node: any) => (
-                <option key={node.id} value={node.id} style={{ backgroundColor: '#0f172a', color: '#f8fafc' }} className="bg-slate-900 text-white">
-                  {node.parent_id ? `↳ ${node.title}` : node.title}
-                </option>
+                <option key={node.id} value={node.id}>{node.parent_id ? `↳ ${node.title}` : node.title}</option>
               ))}
             </select>
           </div>
 
-          {/* Archive Toggle Button */}
+          <span className="enterprise-board-result-count hidden h-8 items-center whitespace-nowrap rounded-lg border border-white/[0.06] px-2.5 text-[10px] font-semibold tabular-nums text-slate-500 lg:flex">
+            {t18n('v7.board.results', { visible: visibleTickets.length, total: scopedTickets.length })}
+          </span>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="enterprise-clear-filters flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/[0.08] px-2.5 text-[10px] font-semibold text-slate-400 transition-colors hover:bg-white/[0.05] hover:text-white"
+              title={t18n('v7.board.clear_filters')}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span className="hidden 2xl:inline">{t18n('v7.board.clear_filters')}</span>
+            </button>
+          )}
+
           {(() => {
-            const archivedCount = allTickets.filter((t: any) => t.is_archived).length;
+            const archivedCount = allTickets.filter((ticket: any) => ticket.is_archived).length;
             return (
               <button
                 type="button"
                 onClick={() => setShowArchivedDone(!showArchivedDone)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 border ${
-                  showArchivedDone 
-                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm' 
-                    : 'bg-white/[0.05] border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                className={`flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 text-[10px] font-semibold transition-colors ${
+                  showArchivedDone
+                    ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300'
+                    : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06] hover:text-white'
                 }`}
-                title={showArchivedDone ? t18n("legacy.hide_archived_done_tasks") : t18n("legacy.show_archived_done_tasks")}
+                title={showArchivedDone ? t18n('legacy.hide_archived_done_tasks') : t18n('legacy.show_archived_done_tasks')}
               >
-                <ArchiveRestore className="w-3.5 h-3.5" />
-                <span>{showArchivedDone ? t18n("legacy.hide_archive") : `${t18n("legacy.archive")} (${archivedCount})`}</span>
+                <ArchiveRestore className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{showArchivedDone ? t18n('legacy.hide_archive') : `${t18n('legacy.archive')} (${archivedCount})`}</span>
               </button>
             );
           })()}
         </div>
       </div>
 
-      {/* HORIZONTAL SCROLLABLE COLUMNS CONTAINER */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="h-full flex gap-6 w-max items-stretch pb-1">
+      <div className="enterprise-board-scroll flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="enterprise-board-columns flex h-full w-max items-stretch gap-3 pb-1">
           {activeColumns.map((col: any) => {
-            let colTickets = allTickets.filter((t: any) => t.status === col.id);
-
-            // Filter by active custom board when not using the cross-cutting board.
-            if (activeBoardId && activeBoardId !== 'all') {
-              const currentBoard = customBoards.find((b: any) => b.id === activeBoardId);
-              colTickets = colTickets.filter((t: any) => 
-                t.board_id === activeBoardId || 
-                (currentBoard && t.tags && t.tags.includes(currentBoard.title))
-              );
-            }
-
-            // Filter by Spec section filter (if specified)
-            if (activeSpecFilter && activeSpecFilter !== 'all') {
-              const nodeIds = [activeSpecFilter, ...boardData.nodes.filter((n: any) => n.parent_id === activeSpecFilter).map((n: any) => n.id)];
-              colTickets = colTickets.filter((t: any) => nodeIds.includes(t.node_id || 'general') || (!t.node_id && nodeIds.includes('general')));
-            }
-
-            // Filter archived tickets across all columns when archive is toggled off
-            if (!showArchivedDone) {
-              colTickets = colTickets.filter((t: any) => !t.is_archived);
-            }
+            const colTickets = visibleTickets.filter((ticket: any) => ticket.status === col.id);
 
             return (
               <KanbanColumn
@@ -257,81 +333,68 @@ export const BoardView = ({ state }: { state: any }) => {
                 canWrite={canWrite}
                 canReview={canReview}
                 handleAddTicket={handleAddTicket}
+                isFiltering={filteringEmptyState}
               />
             );
           })}
-          
-          {/* ADD COLUMN BUTTON / INLINE FORM */}
+
           {canWrite && (isCreatingColumn ? (
-            <div className="w-80 p-4 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-indigo-500/40 shadow-xl flex flex-col justify-between shrink-0 animate-scaleIn">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                    <Plus className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>{t18n("legacy.new_column")}</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
+            <div className="spatial-card w-80 shrink-0 space-y-3 p-3 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
+                  <Plus className="h-3.5 w-3.5 text-indigo-400" />
+                  {t18n('legacy.new_column')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setIsCreatingColumn(false); setInlineColumnTitle(''); }}
+                  className="rounded-md p-1 text-slate-400 hover:bg-white/[0.04] hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <form onSubmit={handleInlineColumnSubmit} className="space-y-2.5">
+                <input
+                  type="text"
+                  autoFocus
+                  value={inlineColumnTitle}
+                  onChange={(e) => setInlineColumnTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
                       setIsCreatingColumn(false);
                       setInlineColumnTitle('');
-                    }}
-                    className="text-slate-400 hover:text-white cursor-pointer"
+                    }
+                  }}
+                  placeholder={t18n('v7.board.example_column')}
+                  className="w-full rounded-lg border border-white/[0.08] bg-slate-950 px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-indigo-500"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={!inlineColumnTitle.trim()}
+                    className="flex-1 rounded-md bg-indigo-600 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
                   >
-                    <X className="w-4 h-4" />
+                    {t18n('v7.board.add')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setIsCreatingColumn(false); setInlineColumnTitle(''); }}
+                    className="rounded-md border border-white/[0.08] px-3 py-2 text-xs font-semibold text-slate-400 hover:bg-white/[0.04] hover:text-white"
+                  >
+                    {t18n('v7.board.cancel')}
                   </button>
                 </div>
-
-                <form onSubmit={handleInlineColumnSubmit} className="space-y-2.5">
-                  <input
-                    type="text"
-                    autoFocus
-                    value={inlineColumnTitle}
-                    onChange={(e) => setInlineColumnTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') {
-                        setIsCreatingColumn(false);
-                        setInlineColumnTitle('');
-                      }
-                    }}
-                    placeholder={t18n('v7.board.example_column')}
-                    className="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-500 outline-none focus:border-indigo-500"
-                  />
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="submit"
-                      disabled={!inlineColumnTitle.trim()}
-                      className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold cursor-pointer transition-all shadow-md shadow-indigo-600/30 flex items-center justify-center gap-1.5"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>{t18n('v7.board.add')}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsCreatingColumn(false);
-                        setInlineColumnTitle('');
-                      }}
-                      className="px-3 py-2 bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white rounded-xl text-xs font-semibold cursor-pointer transition-colors"
-                    >
-                      {t18n('v7.board.cancel')}
-                    </button>
-                  </div>
-                </form>
-              </div>
+              </form>
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => setIsCreatingColumn(true)}
-              className="w-14 min-h-[140px] border border-dashed border-white/15 hover:border-indigo-500/50 hover:bg-indigo-500/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-indigo-300 transition-all cursor-pointer shrink-0 group"
+              className="flex w-11 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/[0.1] text-slate-500 transition-colors hover:border-indigo-500/30 hover:bg-indigo-500/[0.03] hover:text-indigo-400"
               title={t18n('v7.board.add_column')}
             >
-              <div className="w-8 h-8 rounded-xl bg-white/[0.05] group-hover:bg-indigo-500/20 flex items-center justify-center transition-colors">
-                <Plus className="w-4 h-4" />
-              </div>
-              <span className="text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                + {t18n('v7.board.column')}
-              </span>
+              <Plus className="h-4 w-4" />
+              <span className="[writing-mode:vertical-rl] rotate-180 text-[9px] font-semibold tracking-wide">{t18n('v7.board.column')}</span>
             </button>
           ))}
         </div>

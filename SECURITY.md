@@ -4,7 +4,9 @@
 
 Please **do not** open a public GitHub issue for a suspected vulnerability that could expose credentials, personal data, tenant data, billing state, authentication/authorization boundaries, or Live Preview isolation.
 
-Report security issues privately to **security@vibeus.pro** with:
+Send private security reports to the confirmed support mailbox **support@vibeus.pro** with the subject prefix **`[SECURITY]`**. If the specialist alias `security@vibeus.pro` is configured for the deployment, it may also be used.
+
+Include:
 
 - affected component and version/commit, if known;
 - reproduction steps;

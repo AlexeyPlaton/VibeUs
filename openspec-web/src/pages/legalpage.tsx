@@ -72,7 +72,17 @@ export function LegalPage() {
           <Link to="/" className="legal-brand" aria-label={tr('v7.legal.brand_home')}>
             <span className="legal-brand-dot" /> VibeUs
           </Link>
-          <div className="flex items-center gap-3"><LanguageSwitcher compact /><Link to="/" className="legal-back"><ArrowLeft size={15} /> {tr('v7.legal.back')}</Link></div>
+          <div className="flex items-center gap-3">
+            <a
+              href="mailto:support@vibeus.pro"
+              className="legal-back hidden sm:inline-flex"
+              aria-label="support@vibeus.pro"
+            >
+              support@vibeus.pro
+            </a>
+            <LanguageSwitcher compact />
+            <Link to="/" className="legal-back"><ArrowLeft size={15} /> {tr('v7.legal.back')}</Link>
+          </div>
         </div>
       </header>
 

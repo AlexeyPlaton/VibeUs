@@ -42,13 +42,26 @@ def _display(value: Decimal, currency: str) -> str:
     return f"${int(rounded):,}"
 
 
+def global_billing_enabled() -> bool:
+    settings = get_settings()
+    if not settings.enable_global_pricing:
+        return False
+    if settings.enable_mock_billing and settings.environment in {"development", "test", "quality_gate"}:
+        return True
+    return {
+        "cloudpayments": bool(settings.enable_cloudpayments),
+        "stripe": bool(settings.enable_stripe),
+        "lava": bool(settings.enable_lava),
+    }.get(settings.global_billing_provider, False)
+
+
 def public_catalog() -> dict[str, Any]:
     settings = get_settings()
     ru = {
         "market": "ru",
         "currency": "RUB",
         "period_days": settings.billing_period_days,
-        "billing_enabled": bool(settings.enable_yookassa),
+        "billing_enabled": bool(settings.enable_yookassa or (settings.enable_mock_billing and settings.environment in {"development", "test", "quality_gate"})),
         "plans": {
             tier: {
                 "amount": _money(amount("ru", tier)),
@@ -63,7 +76,10 @@ def public_catalog() -> dict[str, Any]:
         "currency": "USD",
         "period_days": settings.billing_period_days,
         "visible": bool(settings.enable_global_pricing),
-        "billing_enabled": bool(settings.enable_global_pricing and settings.enable_stripe),
+        "billing_enabled": global_billing_enabled(),
+        "provider": settings.global_billing_provider if settings.enable_global_pricing else None,
+        "requires_billing_country": True,
+        "business_use_only": True,
         "plans": {
             tier: {
                 "amount": _money(amount("global", tier)),

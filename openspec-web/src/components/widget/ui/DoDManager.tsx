@@ -43,17 +43,14 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
   const [selectedCheckIds, setSelectedCheckIds] = useState<Set<string>>(new Set());
   const [qualityMode, setQualityMode] = useState<EngineeringQualityMode>(() => getEngineeringQualityMode());
 
-  // Custom checks state
   const [customChecks, setCustomChecks] = useState<DoDItem[]>([]);
   const [newCustomTitle, setNewCustomTitle] = useState('');
   const [newCustomCat, setNewCustomCat] = useState<DoDItem['category']>('boundary');
 
-  // Suggestion state
   const [suggestTitle, setSuggestTitle] = useState('');
   const [suggestReason, setSuggestReason] = useState('');
   const [suggestSent, setSuggestSent] = useState(false);
 
-  // AI Generated items state
   const [aiItems, setAiItems] = useState<GeneratedDoDCriterion[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [selectedAiIndices, setSelectedAiIndices] = useState<Set<number>>(new Set());
@@ -69,8 +66,6 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
   if (!isOpen) return null;
 
   const existingTitles = Object.keys(currentChecklists);
-
-  // Catalog items filtered
   const allCatalogItems = [...GOLDEN_DOD_CATALOG, ...customChecks];
   const filteredCatalogItems = allCatalogItems.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -79,6 +74,10 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
     const matchesCat = selectedCategoryFilter === 'all' || item.category === selectedCategoryFilter;
     return matchesSearch && matchesCat;
   });
+
+  const qualityLabel = (mode: EngineeringQualityMode) => t18n(`v7.dod.quality.${mode}`);
+  const severityLabel = (severity: string) => t18n(`v7.dod.severity.${severity}`, { defaultValue: severity });
+  const categoryLabel = (itemCategory: string) => t18n(`v7.dod.category.${itemCategory}`, { defaultValue: itemCategory });
 
   const handleToggleCheckSelection = (id: string) => {
     const next = new Set(selectedCheckIds);
@@ -205,7 +204,7 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
     { id: 'security', label: t18n('v7.dod.cat_security'), icon: '🛡️' },
     { id: 'boundary', label: t18n('v7.dod.cat_boundary'), icon: '🧪' },
     { id: 'spec', label: t18n('v7.dod.cat_spec'), icon: '📐' },
-    { id: 'ui_ux', label: 'UI / UX', icon: '🎨' },
+    { id: 'ui_ux', label: t18n('v7.dod.cat_uiux'), icon: '🎨' },
     { id: 'backend_perf', label: t18n('v7.dod.cat_backend'), icon: '⚙️' }
   ];
 
@@ -217,8 +216,6 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
       className="fixed inset-0 z-[99999999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-fadeIn font-['Plus_Jakarta_Sans',sans-serif]"
     >
       <div className="bg-slate-900/95 backdrop-blur-2xl text-slate-100 rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl border border-slate-700/60 flex flex-col max-h-[90vh] space-y-4 animate-scaleIn">
-        
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
@@ -228,7 +225,7 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 {t18n('v7.dod.title')}
                 <span className="text-[10px] font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">
-                  AI-Assisted
+                  {t18n('v7.dod.assist_badge')}
                 </span>
               </h3>
               <p className="text-[11px] text-slate-400">
@@ -244,11 +241,10 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
           </button>
         </div>
 
-        {/* Engineering quality mode */}
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.06] bg-slate-950/60 px-3 py-2">
           <div>
-            <div className="text-[11px] font-bold text-slate-200">Engineering Quality</div>
-            <div className="text-[10px] text-slate-500">Standard = baseline, Strict = default hardened, Critical = money/auth/data/migrations.</div>
+            <div className="text-[11px] font-bold text-slate-200">{t18n('v7.dod.quality_title')}</div>
+            <div className="text-[10px] text-slate-500">{t18n('v7.dod.quality_help')}</div>
           </div>
           <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-white/[0.06]">
             {(['standard', 'strict', 'critical'] as EngineeringQualityMode[]).map(mode => (
@@ -256,15 +252,14 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
                 key={mode}
                 type="button"
                 onClick={() => { setQualityMode(mode); setEngineeringQualityMode(mode); }}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${qualityMode === mode ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${qualityMode === mode ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
               >
-                {mode}
+                {qualityLabel(mode)}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex items-center gap-1.5 p-1 bg-slate-950/80 rounded-2xl border border-white/[0.05] overflow-x-auto">
           <button
             type="button"
@@ -335,10 +330,7 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
           </button>
         </div>
 
-        {/* Content Area */}
         <div className="flex-1 overflow-y-auto pr-1 min-h-[320px]">
-          
-          {/* TAB 1: PRESETS */}
           {activeTab === 'presets' && (
             <div className="space-y-3">
               <p className="text-xs text-slate-400">
@@ -376,10 +368,8 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
             </div>
           )}
 
-          {/* TAB 2: CATALOG */}
           {activeTab === 'catalog' && (
             <div className="space-y-3">
-              {/* Search & Category Filter */}
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
@@ -409,7 +399,6 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
                 </div>
               </div>
 
-              {/* Items List */}
               <div className="space-y-1.5 max-h-72 overflow-y-auto">
                 {filteredCatalogItems.length === 0 ? (
                   <div className="p-8 text-center border border-dashed border-white/[0.08] rounded-2xl text-xs text-slate-500">
@@ -464,7 +453,6 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
             </div>
           )}
 
-          {/* TAB 3: AI GENERATOR */}
           {activeTab === 'ai' && (
             <div className="space-y-3">
               <div className="p-3.5 bg-gradient-to-r from-indigo-950/40 to-purple-950/40 rounded-2xl border border-indigo-500/20 flex items-center justify-between gap-3">
@@ -527,12 +515,12 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
                         />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[9px] font-black uppercase tracking-wide text-slate-400">{item.severity}</span>
-                            <span className="text-[9px] font-mono text-slate-500">{item.category}</span>
+                            <span className="text-[9px] font-black uppercase tracking-wide text-slate-400">{severityLabel(item.severity)}</span>
+                            <span className="text-[9px] font-mono text-slate-500">{categoryLabel(item.category)}</span>
                           </div>
                           <div className="text-xs font-medium leading-relaxed">{item.title}</div>
-                          {item.requiredTest ? <div className="mt-1 text-[10px] text-slate-400">Verify: {item.requiredTest}</div> : null}
-                          <div className="mt-1 text-[10px] text-slate-500">Pass: {item.passCondition}</div>
+                          {item.requiredTest ? <div className="mt-1 text-[10px] text-slate-400">{t18n('v7.dod.verify_label')}: {item.requiredTest}</div> : null}
+                          <div className="mt-1 text-[10px] text-slate-500">{t18n('v7.dod.pass_label')}: {item.passCondition}</div>
                         </div>
                       </div>
                     );
@@ -542,7 +530,6 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
             </div>
           )}
 
-          {/* TAB 4: CUSTOM CHECKS */}
           {activeTab === 'custom' && (
             <div className="space-y-4">
               <form onSubmit={handleCreateCustomCheck} className="p-3.5 bg-slate-950 rounded-2xl border border-white/[0.08] space-y-3">
@@ -561,11 +548,11 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
                     onChange={(e) => setNewCustomCat(e.target.value as any)}
                     className="bg-slate-900 border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500"
                   >
-                    <option value="security">🛡️ Security</option>
-                    <option value="boundary">🧪 Boundary</option>
-                    <option value="spec">📐 Spec</option>
-                    <option value="ui_ux">🎨 UI/UX</option>
-                    <option value="backend_perf">⚙️ Backend</option>
+                    <option value="security">🛡️ {t18n('v7.dod.category.security')}</option>
+                    <option value="boundary">🧪 {t18n('v7.dod.category.boundary')}</option>
+                    <option value="spec">📐 {t18n('v7.dod.category.spec')}</option>
+                    <option value="ui_ux">🎨 {t18n('v7.dod.category.ui_ux')}</option>
+                    <option value="backend_perf">⚙️ {t18n('v7.dod.category.backend_perf')}</option>
                   </select>
                   <button
                     type="submit"
@@ -604,7 +591,6 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
             </div>
           )}
 
-          {/* TAB 5: SUGGEST TO GOLDEN CATALOG */}
           {activeTab === 'suggest' && (
             <div className="space-y-3">
               <div className="p-3.5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 space-y-1">
@@ -657,7 +643,6 @@ export const DoDManager: React.FC<DoDManagerProps> = ({
           )}
         </div>
 
-        {/* Footer Actions */}
         <div className="border-t border-white/[0.08] pt-3 flex items-center justify-between">
           <div className="text-[11px] text-slate-400">
             {activeTab === 'catalog' && selectedCheckIds.size > 0 && (

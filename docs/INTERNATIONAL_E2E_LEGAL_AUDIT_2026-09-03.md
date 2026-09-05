@@ -36,7 +36,9 @@ For the first hosted launch:
 
 Why: merely writing “B2B” does not switch off privacy law for natural-person users at businesses. Enabling EEA/UK hosted sales requires a separate launch review covering territorial privacy obligations, restricted transfers/representatives where applicable, VAT/tax handling, and consumer rules if consumer sales are offered.
 
-## BLOCKERS before `ENABLE_GLOBAL_PRICING=true`
+## Original blockers before `ENABLE_GLOBAL_PRICING=true`
+
+The original audit identified these blockers. Their implementation status is updated below rather than rewriting the historical finding.
 
 1. Obtain written acceptance of the actual hosted VibeUs SaaS use case from the selected international payment provider.
 2. Complete provider KYC with accurate identity/residence/business-purpose information.
@@ -48,6 +50,24 @@ Why: merely writing “B2B” does not switch off privacy law for natural-person
 8. Update `/legal/subprocessors` with the provider's correct legal entity, role, data categories and processing/transfer locations when it actually becomes active.
 9. Run a real end-to-end payment smoke test with the actual provider, including duplicate webhook delivery, amount mismatch, currency mismatch, unknown invoice, refund, failed payment and delayed webhook cases.
 10. Ensure production `VITE_LEGAL_VERSION` matches the published multilingual legal bundle.
+
+## Implementation update — 2026-09-04
+
+The release-hardening branch materially advanced the original international billing blockers:
+
+- the canonical hosted international provider path is now **CloudPayments**, not the earlier LAVA readiness candidate;
+- provider-agnostic checkout preparation and a CloudPayments adapter are implemented;
+- CloudPayments `Check`, `Pay`, `Fail` and `Refund` notifications are implemented with HMAC verification, expected amount/currency/workspace binding and idempotent local settlement/refund handling;
+- billing country is collected before international checkout;
+- the current EEA/UK restriction is enforced server-side; EEA/UK countries remain selectable so the user receives an explicit denial instead of a misleading missing-country list;
+- the business/professional-use representation is part of the international checkout boundary;
+- browser success redirects remain non-authoritative for entitlement;
+- public repository/document links have been corrected to the actual `AlexeyPlaton/VibeUs` repository and case-sensitive docs paths;
+- the confirmed general hosted support contact is `support@vibeus.pro`.
+
+The remaining NO-GO items are operational/legal rather than missing trust mechanics: actual CloudPayments merchant approval and credentials, foreign-card/currency activation, merchant-specific fiscal/tax treatment, provider/subprocessor legal review and a real paid/refund smoke test on the approved merchant account. Until those are complete, `ENABLE_CLOUDPAYMENTS=false` and `ENABLE_GLOBAL_PRICING=false` remain the intended production defaults.
+
+See `docs/INTERNATIONAL_BILLING_RU.md` for the current CloudPayments activation runbook.
 
 ## EEA/UK later-launch checklist
 
@@ -65,7 +85,7 @@ Before intentionally offering the hosted service in the EEA/UK, review and imple
 
 ## Translation/UX observations
 
-The V7 English product copy reviewed for the primary landing/create/dashboard path is generally natural and clear. Remaining quality debt is mostly stylistic rather than a launch-language blocker. One stale public landing link still references `AlexeyPlaton/Vibus` instead of `AlexeyPlaton/VibeUs`; fix it in a follow-up UI cleanup. Some decorative/product labels remain hardcoded English rather than i18n keys, which is harmless for an English customer but produces mixed-language presentation in RU and should be gradually moved into locale files.
+The V7 English product copy reviewed for the primary landing/create/dashboard path is generally natural and clear. Remaining quality debt is mostly stylistic rather than a launch-language blocker. The previously noted stale `AlexeyPlaton/Vibus` repository reference and lowercase case-sensitive documentation links have now been corrected. Some decorative/product labels remain hardcoded English rather than i18n keys; this is not an English launch blocker but should continue to be reduced where it produces mixed-language presentation in RU.
 
 ## Legal bundle created
 

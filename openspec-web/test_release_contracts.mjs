@@ -154,7 +154,9 @@ test('network telemetry sanitizes sensitive query strings and extracts request I
 
 test('runtime error bridge contracts: one-time ingest secret, sanitization, and widget correlation', () => {
   const dash = read('./src/pages/DashboardPage.tsx');
-  assert.match(dash, /Runtime Ingest Key/);
+  const terms = read('./src/i18n/terminology.ts');
+  assert.match(dash, /v7\.dashboard\.labels\.runtime_ingest_key/);
+  assert.match(terms, /runtime_ingest_key:\s*['"]Runtime Ingest Key['"]/);
   assert.match(dash, /rotate-ingest-key/);
   assert.match(dash, /ingest_key_configured/);
   assert.match(dash, /newIngestKey/);
@@ -164,7 +166,8 @@ test('runtime error bridge contracts: one-time ingest secret, sanitization, and 
 
   const create = read('./src/pages/CreateProjectPage.tsx');
   assert.match(create, /result\.ingest_key/);
-  assert.match(create, /one-time view/);
+  assert.match(create, /v7\.create\.labels\.one_time_secret/);
+  assert.match(terms, /one_time_secret:\s*['"]SECRET · one-time view['"]/);
 
   const widget = read('./src/components/widget/hooks/useWidgetState.ts');
   assert.match(widget, /latestErrorWithReqId/);
@@ -182,7 +185,6 @@ test('runtime error bridge contracts: one-time ingest secret, sanitization, and 
   assert.match(bridge, /with_for_update/);
   assert.match(bridge, /ticket_created_post_commit_side_effects/);
 });
-
 
 
 test('paid prices come from the public runtime catalog, not React constants', () => {
